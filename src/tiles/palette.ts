@@ -60,3 +60,28 @@ export const FOG = {
   color: '#1b1922',
   hatch: 'rgba(255, 255, 255, 0.07)',
 };
+
+/**
+ * Props (F10): kleur van de reserve-tekening (placeholder) per tegel-id,
+ * zolang er geen afbeelding in src/tiles/props/ staat. Eén kleur per categorie.
+ */
+const FURNITURE = '#8a5a33';
+const BUILDING = '#7d7a75';
+const NATURE = '#4f7a3a';
+const SMALL = '#b08a4a';
+const MARKER = '#c0392b';
+
+const group = (color: string, ids: string[]) => Object.fromEntries(ids.map((id) => [id, color]));
+
+export const PROP: Record<string, string> = {
+  ...group(FURNITURE, [
+    'table', 'chair', 'bench', 'bed', 'chest', 'barrel', 'crate', 'bookshelf', 'cupboard',
+    'counter', 'fireplace', 'oven', 'rug',
+  ]),
+  ...group(BUILDING, [
+    'stairs-up', 'stairs-down', 'ladder', 'pillar', 'statue', 'altar', 'well', 'trough', 'rubble', 'bell',
+  ]),
+  ...group(NATURE, ['tree', 'bush', 'rock', 'boulder', 'log', 'reeds', 'flowers', 'stone-circle-stone', 'campfire']),
+  ...group(SMALL, ['sacks', 'hay', 'cart', 'lantern', 'candle', 'brazier', 'bones', 'weapon-rack', 'anvil']),
+  ...group(MARKER, ['trap-marker']),
+};

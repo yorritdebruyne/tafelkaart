@@ -150,6 +150,21 @@ svg.map { display: block; margin: 0 auto; user-select: none; -webkit-user-select
   font-family: ui-monospace, Consolas, monospace;
 }
 
+.layer-props, .layer-fog { pointer-events: none; }
+.prop-placeholder { stroke: rgba(0, 0, 0, 0.55); stroke-width: 2; opacity: 0.92; }
+.prop-placeholder.unknown { stroke-dasharray: 5 4; }
+.prop-top { fill: rgba(255, 255, 255, 0.85); }
+.prop-label {
+  fill: #fff;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+  stroke: rgba(0, 0, 0, 0.6);
+  stroke-width: 2.5;
+  paint-order: stroke;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
 .wall { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .door-leaf { stroke: rgba(0, 0, 0, 0.6); stroke-width: 2; }
 .door-gap { stroke: rgba(0, 0, 0, 0.45); stroke-width: 3; stroke-dasharray: 6 6; }

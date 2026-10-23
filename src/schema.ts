@@ -20,7 +20,8 @@ import {
   parseCell,
   rectInBounds,
 } from './coords';
-import { DOOR, FLOOR, WALL } from './tiles/palette';
+import { tileImage } from './tiles';
+import { DOOR, FLOOR, PROP, WALL } from './tiles/palette';
 
 export const MAP_VERSION = 1;
 
@@ -42,6 +43,8 @@ export interface TokenItem {
   /** Condities (bv. "prone"), gezet via een patch. Getekend als badge in M3 (F14). */
   conditions?: string[];
 }
+/** Een prop (F10): meubel, boom, ... op één vakje of over een rechthoek. rot in graden, met de klok mee. */
+export interface PropItem { tile: string; rect: Rect; rot: number; }
 /** Een regio voor fog of war (F11). Verborgen = bedekt met mist. */
 export interface RegionItem { id: string; rect: Rect; hidden: boolean; }
 
@@ -53,6 +56,7 @@ export interface MapData {
   floor: FloorItem[];
   walls: WallItem[];
   doors: DoorItem[];
+  props: PropItem[];
   regions: RegionItem[];
   tokens: TokenItem[];
 }
@@ -94,6 +98,13 @@ const DoorSchema = z.object({
   state: z.enum(['open', 'closed', 'locked']).default('closed'),
 });
 
+const PropSchema = z.object({
+  tile: z.string().min(1),
+  area: z.string().optional(),
+  cell: z.string().optional(),
+  rot: z.number().default(0),
+});
+
 const RegionSchema = z.object({
   id: z.string().min(1),
   area: z.string().optional(),
@@ -116,7 +127,6 @@ const SIDE_ALIASES: Record<string, EdgeSide> = { N: 'N', O: 'O', E: 'O', Z: 'Z',
 
 /** Velden die we al aanvaarden maar pas later tekenen. */
 const LATER: Record<string, string> = {
-  props: 'M2',
   terrain: 'M3',
   lights: 'M3',
 };
@@ -228,8 +238,9 @@ export function parseMapObject(input: unknown): ParseResult {
 
   const size = `${cols}×${rows}`;
   const unknownTiles = new Set<string>();
-  const warnUnknownTile = (tile: string, where: string, known: Record<string, string>) => {
-    if (known[tile] || unknownTiles.has(tile)) return;
+  const warnUnknownTile = (tile: string, where: string, known: Record<string, string>, kind?: 'floor' | 'props') => {
+    // Bekend = er is een kleur in palette.ts, of een afbeelding in src/tiles/.
+    if (known[tile] || (kind && tileImage(kind, tile)) || unknownTiles.has(tile)) return;
     unknownTiles.add(tile);
     warnings.push(`${where}: onbekende tegel "${tile}", wordt grijs getekend.`);
   };
@@ -288,7 +299,7 @@ export function parseMapObject(input: unknown): ParseResult {
     const { tile, area, cell } = res.data;
     const rect = rectOf(area, cell, where);
     if (!rect) return;
-    warnUnknownTile(tile, where, FLOOR);
+    warnUnknownTile(tile, where, FLOOR, 'floor');
     floor.push({ tile, rect });
   });
 
@@ -328,6 +339,19 @@ export function parseMapObject(input: unknown): ParseResult {
     doors.push({ id, tile: res.data.tile, cell, side, state: res.data.state });
   });
 
+  // --- props
+  const props: PropItem[] = [];
+  list('props').forEach((raw, i) => {
+    const where = `props[${i}]`;
+    const res = PropSchema.safeParse(raw);
+    if (!res.success) return void errors.push(...issuesToText(where, res.error, raw));
+    const { tile, area, cell, rot } = res.data;
+    const rect = rectOf(area, cell, where);
+    if (!rect) return;
+    warnUnknownTile(tile, where, PROP, 'props');
+    props.push({ tile, rect, rot: ((rot % 360) + 360) % 360 });
+  });
+
   // --- regions (fog of war)
   const regions: RegionItem[] = [];
   const regionIds = new Set<string>();
@@ -365,7 +389,7 @@ export function parseMapObject(input: unknown): ParseResult {
   if (later.length) notes.push(`Nog niet getekend, komt later: ${later.join(', ')}.`);
 
   return {
-    map: { version, name, cols, rows, floor, walls, doors, regions, tokens },
+    map: { version, name, cols, rows, floor, walls, doors, props, regions, tokens },
     errors,
     warnings,
     notes,

@@ -1,9 +1,12 @@
 // Fog of war (F11): een donkere rechthoek over elke verborgen regio.
 // Deze laag ligt boven alles behalve de speler-tokens en de sleep-markering.
 
-import type { MapData } from '../schema';
+import { cellEdge } from '../coords';
+import { isCellHidden } from '../fog';
+import type { DoorItem, MapData } from '../schema';
 import { FOG } from '../tiles/palette';
 import { S, svgEl } from './svg';
+import { renderDoor } from './walls';
 
 export function renderFog(g: SVGGElement, map: MapData): void {
   g.replaceChildren();
@@ -30,4 +33,15 @@ export function renderFog(g: SVGGElement, map: MapData): void {
       'data-region': r.id,
     }, g);
   }
+
+  // Een deur op de rand van de mist zie je van buitenaf wel: die tekenen we nog
+  // eens bovenop, zodat je ziet of ze open, dicht of op slot is.
+  for (const d of map.doors) if (onFogEdge(map, d)) renderDoor(g, d);
+}
+
+function onFogEdge(map: MapData, d: DoorItem): boolean {
+  const e = cellEdge(d.cell, d.side);
+  const other = { c: d.cell.c - e.nx, r: d.cell.r - e.ny };
+  if (other.c < 0 || other.r < 0 || other.c >= map.cols || other.r >= map.rows) return false;
+  return isCellHidden(map, d.cell) !== isCellHidden(map, other);
 }

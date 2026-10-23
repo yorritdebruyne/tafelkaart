@@ -31,6 +31,7 @@ export function loadState(): Saved | null {
     s.patches ??= [];
     s.paths ??= {};
     s.map.regions ??= [];
+    s.map.props ??= [];
     return saved;
   } catch {
     return null;

@@ -18,7 +18,7 @@ export function renderWalls(g: SVGGElement, map: MapData): void {
   for (const d of map.doors) renderDoor(g, d);
 }
 
-function renderDoor(g: SVGGElement, d: DoorItem): void {
+export function renderDoor(g: SVGGElement, d: DoorItem): void {
   const e = cellEdge(d.cell, d.side);
   const color = DOOR[d.tile] ?? UNKNOWN;
   const x1 = e.x1 * S, y1 = e.y1 * S, x2 = e.x2 * S, y2 = e.y2 * S;

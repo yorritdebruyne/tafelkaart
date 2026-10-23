@@ -1,7 +1,8 @@
-# Tafelkaart (M1 – Speelbaar)
+# Tafelkaart (M2 – Mooi, in opbouw)
 
 Statische web-app die een D&D-kaart tekent uit JSON van de DM. Spelers slepen hun token,
-de app telt de afstand en kopieert de posities terug voor de chat.
+de app telt de afstand en kopieert de posities terug voor de chat. Tijdens het spel stuurt de DM
+kleine wijzigingen (patches): tokens verplaatsen, deuren openen, verborgen kamers tonen.
 
 ---
 
@@ -67,7 +68,7 @@ Terwijl `dev` draait: sla je een bestand op, dan herlaadt de browser vanzelf.
 
 ## 3. Testlijst
 
-Klik in de app op **Kaart laden → Testkaart (stal)** en controleer:
+Klik in de app op **Laden → Testkaart (stal)** en controleer:
 
 - [ ] De stal staat er: aarde binnen, kasseien onder, houten muren, deur bij H7.
 - [ ] Akmenos slepen werkt met de muis (pc) en met je vinger (telefoon).
@@ -78,9 +79,21 @@ Klik in de app op **Kaart laden → Testkaart (stal)** en controleer:
 - [ ] **Nieuwe beurt** zet de tellers op 0; **Beurt ↺** doet dat per speler.
 - [ ] Zoomknoppen − en + werken; met één vinger scroll je over een grote kaart.
 - [ ] Thema-knop wisselt tussen auto, licht en donker.
-- [ ] **Kaart laden → Open bestand** → `voorbeelden/fouten-demo.json`:
+- [ ] **Laden → Open bestand** → `voorbeelden/fouten-demo.json`:
       foutmeldingen per veld, een grijs vakje "marmer", en de rest van de kaart staat er wel.
 - [ ] Pagina herladen → kaart en posities blijven staan.
+
+**M2 (nieuw)** – laad eerst opnieuw de testkaart:
+
+- [ ] De zadelkamer (H6:J8) is bedekt met donkere mist met streepjes; de deur bij H7 zie je wel.
+- [ ] Hooi, ladder, zakken en trog staan er als gekleurde blokjes met hun naam (reserve-tekening).
+- [ ] Sleep Akmenos de mist in: hij blijft zichtbaar boven de mist.
+- [ ] **Laden → Testpatch (stal)**: T1 staat op C3, T2 is weg, T3 staat op G7, de deur staat open,
+      de mist is weg. Onderaan verschijnt een melding met alle wijzigingen.
+- [ ] Nog eens **Testpatch** → "Deze patch is al toegepast. Niets veranderd."
+- [ ] **Kopieer posities** → T2 staat er niet meer in, T3 wel.
+- [ ] Pagina herladen → de patch blijft toegepast.
+- [ ] Plak `voorbeelden/testpatch-stal.json` met `"map": "Grot"` → foutmelding, niets veranderd.
 
 Iets mis? Noteer wat je deed, wat je verwachtte en wat er gebeurde (screenshot helpt) en geef het aan Claude.
 
@@ -94,12 +107,17 @@ src/
   coords.ts      "E9" <-> {c:4, r:8}, gebieden, randen van vakjes
   schema.ts      JSON controleren met Zod, Nederlandse foutmeldingen per veld
   state.ts       MapState: kaart + afgelegde weg per token (onveranderlijk)
+  patch.ts       patches toepassen: applyPatch(state, json) -> nieuwe state + meldingen
+  fog.ts         welke vakjes en tokens in de mist liggen
   rules.ts       afstand (diagonaal = 1), meters, "Posities: ..."
-  testmap.ts     de stal
+  testmap.ts     de stal en de testpatch
   styles.css     opmaak, licht en donker thema
-  render/        SVG-lagen: vloer, grid, muren + deuren, weg, tokens
-  tiles/
-    palette.ts   ALLE kleuren van tegels en tokens  ← hier begint het visuele werk (M2)
+  render/        SVG-lagen: vloer, grid, props, muren + deuren, weg, tokens, mist
+  tiles/         ← hier begint het visuele werk (zie tiles/README.md)
+    palette.ts   ALLE kleuren van tegels, tokens en mist
+    index.ts     tegel-lader: zoekt afbeeldingen in floor/ en props/
+    floor/       vloer-afbeeldingen (<id>.svg of .png)
+    props/       prop-afbeeldingen (<id>.svg of .png)
   ui/
     app.ts       knoppen, laden, status, zoom, thema
     drag.ts      slepen met muis en touch (pointer events)
@@ -108,7 +126,8 @@ src/
     storage.ts   laatste kaart en posities bewaren in de browser
   *.test.ts      tests (Vitest)
 voorbeelden/
-  fouten-demo.json   kaart met opzettelijke fouten
+  fouten-demo.json     kaart met opzettelijke fouten
+  testpatch-stal.json  de testpatch voor de stal
 CREDITS.md       bronnen van tegelkunst (nu nog leeg)
 ```
 
@@ -127,7 +146,20 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
 - **F8** Kopieer posities (spelers eerst).
 - **F18** onbekende tegel → grijs vakje met de naam.
 - Fouten per veld; de rest van de kaart wordt toch getekend. Onbekende velden worden genegeerd.
-- `props`, `terrain`, `lights` en `regions` worden al aanvaard maar pas in M2/M3 getekend (info-melding).
+
+## 5b. Wat M2 tot nu toe doet
+
+- **F9** patches: plak een patch in hetzelfde venster als een kaart (of via de URL-hash).
+  Tokens verplaatsen (`cell`), toevoegen (`add`), weghalen (`remove`), condities zetten (`conditions`,
+  getoond vanaf M3), deuren (`state`) en verborgen regio's tonen (`reveal`).
+  Fout item → melding, de rest wordt toegepast. Patch voor een andere kaart → geweigerd.
+  Dezelfde patch twee keer → de tweede keer gebeurt er niets.
+- **F10** props op een vakje of rechthoek, met `rot` in graden (met de klok mee).
+- **F11** fog of war: `regions` met `hidden` (standaard `true`). Speler-tokens blijven zichtbaar;
+  vijanden en npc's in de mist worden niet getekend en niet gekopieerd.
+- Tegel-lader: afbeelding in `src/tiles/floor/` of `src/tiles/props/` → die wordt gebruikt,
+  anders een reserve-tekening.
+- `terrain` en `lights` worden al aanvaard maar pas in M3 getekend (info-melding).
 
 ## 6. Goed om te weten
 

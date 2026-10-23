@@ -39,7 +39,11 @@ export interface TokenItem {
   size: 1 | 2;
   /** Speed in vakjes (6 = 30 ft = 9 m). */
   speed?: number;
+  /** Condities (bv. "prone"), gezet via een patch. Getekend als badge in M3 (F14). */
+  conditions?: string[];
 }
+/** Een regio voor fog of war (F11). Verborgen = bedekt met mist. */
+export interface RegionItem { id: string; rect: Rect; hidden: boolean; }
 
 export interface MapData {
   version: number;
@@ -49,6 +53,7 @@ export interface MapData {
   floor: FloorItem[];
   walls: WallItem[];
   doors: DoorItem[];
+  regions: RegionItem[];
   tokens: TokenItem[];
 }
 
@@ -89,6 +94,14 @@ const DoorSchema = z.object({
   state: z.enum(['open', 'closed', 'locked']).default('closed'),
 });
 
+const RegionSchema = z.object({
+  id: z.string().min(1),
+  area: z.string().optional(),
+  cell: z.string().optional(),
+  // Zonder "hidden" is een regio verborgen: anders heeft ze geen nut.
+  hidden: z.boolean().default(true),
+});
+
 const TokenSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).optional(),
@@ -104,7 +117,6 @@ const SIDE_ALIASES: Record<string, EdgeSide> = { N: 'N', O: 'O', E: 'O', Z: 'Z',
 /** Velden die we al aanvaarden maar pas later tekenen. */
 const LATER: Record<string, string> = {
   props: 'M2',
-  regions: 'M2 (fog of war)',
   terrain: 'M3',
   lights: 'M3',
 };
@@ -158,13 +170,13 @@ function describeIssue(issue: z.core.$ZodIssue, input: unknown): string {
   }
 }
 
-function issuesToText(base: string, error: z.ZodError, input: unknown): string[] {
+export function issuesToText(base: string, error: z.ZodError, input: unknown): string[] {
   return error.issues.map((issue) => `${joinPath(base, issue.path)}: ${describeIssue(issue, input)}`);
 }
 
 // ---------------------------------------------------------------- JSON lezen
 
-function parseJsonLenient(text: string): { ok: true; value: unknown } | { ok: false; error: string } {
+export function parseJsonLenient(text: string): { ok: true; value: unknown } | { ok: false; error: string } {
   try {
     return { ok: true, value: JSON.parse(text) };
   } catch (e) {
@@ -202,7 +214,7 @@ export function parseMapObject(input: unknown): ParseResult {
   }
   const obj = input as Record<string, unknown>;
   if (obj.type === 'patch') {
-    return fail('Dit is een patch, geen kaart. Patches toepassen komt in M2 (F9).');
+    return fail('Dit is een patch, geen kaart. Laad eerst de kaart en plak de patch daarna.');
   }
 
   const head = HeaderSchema.safeParse(obj);
@@ -248,6 +260,25 @@ export function parseMapObject(input: unknown): ParseResult {
     return cell;
   };
 
+  /** Lees "area" of "cell" van een item als rechthoek, binnen de kaart. */
+  const rectOf = (area: string | undefined, cell: string | undefined, where: string): Rect | null => {
+    const text = area ?? cell;
+    if (!text) {
+      errors.push(`${where}: "area" of "cell" ontbreekt`);
+      return null;
+    }
+    const rect = parseArea(text);
+    if (!rect) {
+      errors.push(`${where}.${area ? 'area' : 'cell'}: onbekend gebied "${text}"`);
+      return null;
+    }
+    if (!rectInBounds(rect, cols, rows)) {
+      errors.push(`${where}: "${text}" valt (deels) buiten de kaart (${size})`);
+      return null;
+    }
+    return rect;
+  };
+
   // --- floor
   const floor: FloorItem[] = [];
   list('floor').forEach((raw, i) => {
@@ -255,13 +286,8 @@ export function parseMapObject(input: unknown): ParseResult {
     const res = FloorSchema.safeParse(raw);
     if (!res.success) return void errors.push(...issuesToText(where, res.error, raw));
     const { tile, area, cell } = res.data;
-    const text = area ?? cell;
-    if (!text) return void errors.push(`${where}: "area" of "cell" ontbreekt`);
-    const rect = parseArea(text);
-    if (!rect) return void errors.push(`${where}.${area ? 'area' : 'cell'}: onbekend gebied "${text}"`);
-    if (!rectInBounds(rect, cols, rows)) {
-      return void errors.push(`${where}: "${text}" valt (deels) buiten de kaart (${size})`);
-    }
+    const rect = rectOf(area, cell, where);
+    if (!rect) return;
     warnUnknownTile(tile, where, FLOOR);
     floor.push({ tile, rect });
   });
@@ -302,6 +328,21 @@ export function parseMapObject(input: unknown): ParseResult {
     doors.push({ id, tile: res.data.tile, cell, side, state: res.data.state });
   });
 
+  // --- regions (fog of war)
+  const regions: RegionItem[] = [];
+  const regionIds = new Set<string>();
+  list('regions').forEach((raw, i) => {
+    const where = `regions[${i}]`;
+    const res = RegionSchema.safeParse(raw);
+    if (!res.success) return void errors.push(...issuesToText(where, res.error, raw));
+    const { id, area, cell, hidden } = res.data;
+    if (regionIds.has(id)) return void errors.push(`${where}.id: "${id}" bestaat al, regio overgeslagen`);
+    const rect = rectOf(area, cell, where);
+    if (!rect) return;
+    regionIds.add(id);
+    regions.push({ id, rect, hidden });
+  });
+
   // --- tokens
   const tokens: TokenItem[] = [];
   const tokenIds = new Set<string>();
@@ -324,7 +365,7 @@ export function parseMapObject(input: unknown): ParseResult {
   if (later.length) notes.push(`Nog niet getekend, komt later: ${later.join(', ')}.`);
 
   return {
-    map: { version, name, cols, rows, floor, walls, doors, tokens },
+    map: { version, name, cols, rows, floor, walls, doors, regions, tokens },
     errors,
     warnings,
     notes,

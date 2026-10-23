@@ -5,15 +5,24 @@ import { formatCell } from '../coords';
 import { GUTTER, createMapView, mapExtent, renderMap, renderMoving, type MapView } from '../render';
 import { S } from '../render/svg';
 import { renderPaths, updateBadge } from '../render/tokens';
+import { visibleTokens } from '../fog';
+import { applyPatch } from '../patch';
 import { isOverSpeed, pathLength, positionsText, squaresToMeters } from '../rules';
-import { type ParseResult, parseMapText } from '../schema';
+import { parseJsonLenient, parseMapText } from '../schema';
 import { createState, getPath, getToken, moveToken, newTurn, type MapState } from '../state';
-import { TEST_MAP } from '../testmap';
+import { TEST_MAP, TEST_PATCH } from '../testmap';
 import { SIDE } from '../tiles/palette';
 import { copyText } from './clipboard';
 import { attachDrag } from './drag';
 import { readMapFromHash } from './hash';
 import { loadState, loadTheme, saveState, saveTheme, type Theme } from './storage';
+
+/** Wat het meldingenpaneel toont (van een kaart of van een patch). */
+interface Messages {
+  errors: string[];
+  warnings: string[];
+  notes: string[];
+}
 
 const MIN_CELL_PX = 16;
 const MAX_CELL_PX = 200;
@@ -61,31 +70,30 @@ export class App {
     window.addEventListener('hashchange', () => this.loadFromHash());
     window.addEventListener('resize', () => this.applyZoom());
 
-    if (!this.loadFromHash()) {
-      const saved = loadState();
-      if (saved) this.setState(saved.state, saved.source, true);
-      else this.openDialog();
-    }
+    // Eerst de bewaarde kaart terugzetten, daarna pas de hash: zo kan een
+    // patch in de hash (#b64=...) op de bewaarde kaart toegepast worden.
+    const saved = loadState();
+    if (saved) this.setState(saved.state, saved.source, true);
+    if (!this.loadFromHash() && !saved) this.openDialog();
   }
 
   // ------------------------------------------------------------ laden
 
-  /** Kaart uit de URL-hash. Zelfde kaart als bewaard? Dan houden we de posities. */
+  /** Kaart of patch uit de URL-hash. Zelfde kaart als nu geladen? Dan houden we de posities. */
   private loadFromHash(): boolean {
     const text = readMapFromHash(location.hash);
     if (!text) return false;
-    const saved = loadState();
-    if (saved && saved.source === text) {
-      this.setState(saved.state, saved.source, true);
-      return true;
-    }
+    if (this.state && this.source === text) return true;
     return this.loadText(text);
   }
 
-  /** Geeft true als er een kaart getekend is (eventueel met fouten). */
+  /** Kaart of patch laden. Geeft true als het gelukt is (eventueel met fouten). */
   private loadText(text: string): boolean {
+    const json = parseJsonLenient(text);
+    if (json.ok && isPatch(json.value)) return this.loadPatch(json.value);
+
     const res = parseMapText(text);
-    this.showMessages(res);
+    this.showMessages(res, 'Kaart');
     if (!res.map) {
       this.dialogErrors.replaceChildren(...res.errors.map((e) => line(e, 'error')));
       return false;
@@ -104,6 +112,33 @@ export class App {
     if (fresh) this.fitZoom();
     this.renderStatus();
     this.save();
+  }
+
+  /** F9: een patch toepassen op de geladen kaart. */
+  private loadPatch(value: unknown): boolean {
+    if (!this.state) {
+      this.dialogErrors.replaceChildren(line('Dit is een patch. Laad eerst de kaart, en plak de patch daarna.', 'error'));
+      return false;
+    }
+    const res = applyPatch(this.state, value);
+    if (res.duplicate) {
+      this.dialogErrors.replaceChildren();
+      this.showToast('Deze patch is al toegepast. Niets veranderd.');
+      return true;
+    }
+    if (!res.applied) {
+      this.dialogErrors.replaceChildren(...res.errors.map((e) => line(e, 'error')));
+      return false;
+    }
+    this.dialogErrors.replaceChildren();
+    this.state = res.state;
+    if (this.selectedId && !getToken(this.state, this.selectedId)) this.selectedId = null;
+    renderMap(this.view, this.state, this.selectedId); // alles: deuren en mist kunnen veranderd zijn
+    this.renderStatus();
+    this.save();
+    this.showMessages({ errors: res.errors, warnings: res.warnings, notes: [] }, 'Patch');
+    this.showToast(res.changes.length ? `Patch: ${res.changes.join(', ')}` : 'Patch: niets veranderd.', 4000);
+    return true;
   }
 
   private save(): void {
@@ -168,6 +203,10 @@ export class App {
       this.input.value = TEST_MAP;
       if (this.loadText(TEST_MAP)) this.dialog.close();
     });
+    $('btn-testpatch').addEventListener('click', () => {
+      this.input.value = TEST_PATCH;
+      if (this.loadText(TEST_PATCH)) this.dialog.close();
+    });
     $<HTMLInputElement>('file-input').addEventListener('change', async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -193,7 +232,8 @@ export class App {
 
   private async copyPositions(): Promise<void> {
     if (!this.state) return this.showToast('Laad eerst een kaart.');
-    const text = positionsText(this.state.map.tokens);
+    // Wie in de mist staat, komt er niet in (anders verklapt de app iets).
+    const text = positionsText(visibleTokens(this.state.map));
     if (await copyText(text)) {
       this.showToast(`Gekopieerd: ${text}`);
     } else {
@@ -263,7 +303,7 @@ export class App {
       li.append(dot, name, move, reset);
       return li;
     });
-    const others = state.map.tokens.length - rows.length;
+    const others = visibleTokens(state.map).length - rows.length;
     const ul = document.createElement('ul');
     ul.append(...rows);
     const hint = document.createElement('p');
@@ -274,7 +314,7 @@ export class App {
     this.status.replaceChildren(ul, hint);
   }
 
-  private showMessages(res: ParseResult): void {
+  private showMessages(res: Messages, what: 'Kaart' | 'Patch'): void {
     const items = [
       ...res.errors.map((e) => line(e, 'error')),
       ...res.warnings.map((w) => line(w, 'warning')),
@@ -290,19 +330,23 @@ export class App {
       res.warnings.length ? `${res.warnings.length} waarschuwing(en)` : '',
       res.notes.length ? 'info' : '',
     ].filter(Boolean);
-    summary.textContent = parts.join(', ');
+    summary.textContent = `${what}: ${parts.join(', ')}`;
     const ul = document.createElement('ul');
     ul.append(...items);
     details.append(summary, ul);
     this.messages.replaceChildren(details);
   }
 
-  private showToast(text: string): void {
+  private showToast(text: string, ms = 2500): void {
     this.toast.textContent = text;
     this.toast.hidden = false;
     window.clearTimeout(this.toastTimer);
-    this.toastTimer = window.setTimeout(() => (this.toast.hidden = true), 2500);
+    this.toastTimer = window.setTimeout(() => (this.toast.hidden = true), ms);
   }
+}
+
+function isPatch(value: unknown): boolean {
+  return !!value && typeof value === 'object' && (value as { type?: unknown }).type === 'patch';
 }
 
 function line(text: string, cls: string): HTMLLIElement {

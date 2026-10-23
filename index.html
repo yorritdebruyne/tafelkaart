@@ -13,7 +13,7 @@
         <span id="map-name" class="muted">geen kaart</span>
       </div>
       <nav class="toolbar">
-        <button id="btn-load" type="button">Kaart laden</button>
+        <button id="btn-load" type="button">Laden</button>
         <button id="btn-copy" type="button" class="primary">Kopieer posities</button>
         <button id="btn-turn" type="button">Nieuwe beurt</button>
         <span class="zoom">
@@ -32,14 +32,15 @@
 
     <dialog id="load-dialog">
       <form method="dialog" class="load-form">
-        <h2>Kaart laden</h2>
-        <p class="muted">Plak de JSON van de DM hieronder. Tekst rond de JSON (zoals <code>```json</code>) mag mee.</p>
-        <textarea id="map-input" rows="10" spellcheck="false" placeholder='{ "type": "map", ... }'></textarea>
+        <h2>Kaart of patch laden</h2>
+        <p class="muted">Plak de JSON van de DM hieronder: een kaart (<code>"type": "map"</code>) of een patch (<code>"type": "patch"</code>). Tekst rond de JSON (zoals <code>```json</code>) mag mee.</p>
+        <textarea id="map-input" rows="10" spellcheck="false" placeholder='{ "type": "map", ... }  of  { "type": "patch", ... }'></textarea>
         <div id="dialog-errors" class="dialog-errors"></div>
         <div class="dialog-buttons">
           <button id="btn-draw" type="button" class="primary">Tekenen</button>
           <label class="button">Open bestand<input id="file-input" type="file" accept=".json,application/json,text/plain" hidden /></label>
           <button id="btn-testmap" type="button">Testkaart (stal)</button>
+          <button id="btn-testpatch" type="button">Testpatch (stal)</button>
           <button value="close" type="submit">Sluiten</button>
         </div>
       </form>

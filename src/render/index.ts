@@ -1,16 +1,18 @@
 // De kaart als één <svg> met een <g> (groep) per laag.
 // Volgorde = tekenvolgorde: wat later komt, ligt bovenop.
-// Lagen die nog leeg zijn (terrain, props, light, fog) vullen we in M2/M3.
+// Speler-tokens liggen boven de mist: je ziet altijd waar je eigen personage staat.
+// Lagen die nog leeg zijn (terrain, props, light) vullen we in M2/M3.
 
 import type { MapState } from '../state';
 import { renderFloor } from './floor';
+import { renderFog } from './fog';
 import { renderGrid, renderLabels } from './grid';
 import { S, svgEl } from './svg';
 import { renderPaths, renderTokens } from './tokens';
 import { renderWalls } from './walls';
 
 export const LAYERS = [
-  'labels', 'floor', 'grid', 'terrain', 'props', 'walls', 'light', 'path', 'tokens', 'fog', 'overlay',
+  'labels', 'floor', 'grid', 'terrain', 'props', 'walls', 'light', 'path', 'tokens', 'fog', 'players', 'overlay',
 ] as const;
 export type LayerName = (typeof LAYERS)[number];
 
@@ -48,11 +50,12 @@ export function renderMap(view: MapView, state: MapState, selectedId: string | n
   renderFloor(view.layers.floor, map);
   renderGrid(view.layers.grid, map);
   renderWalls(view.layers.walls, map);
+  renderFog(view.layers.fog, map);
   renderMoving(view, state, selectedId);
 }
 
 /** Alleen wat verandert als tokens bewegen: wegen en tokens. */
 export function renderMoving(view: MapView, state: MapState, selectedId: string | null): void {
   renderPaths(view.layers.path, state);
-  view.tokenEls = renderTokens(view.layers.tokens, state, selectedId);
+  view.tokenEls = renderTokens(view.layers.tokens, view.layers.players, state, selectedId);
 }

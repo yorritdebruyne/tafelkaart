@@ -12,7 +12,22 @@ describe('schema', () => {
     expect(res.map?.tokens.map((t) => t.id)).toEqual(['Ak', 'Am', 'P', 'T1', 'T2']);
     expect(res.map?.walls).toHaveLength(6);
     expect(res.map?.doors[0]).toMatchObject({ id: 'zadel', side: 'W', state: 'closed' });
-    expect(res.notes[0]).toContain('props');
+    expect(res.map?.regions).toEqual([{ id: 'zadelkamer', rect: { c1: 7, r1: 5, c2: 9, r2: 7 }, hidden: true }]);
+    expect(res.notes[0]).toContain('terrain');
+    expect(res.notes[0]).not.toContain('regions');
+  });
+
+  it('regio zonder hidden is verborgen; fout gebied geeft een melding', () => {
+    const res = parseMapObject({
+      ...base,
+      regions: [{ id: 'a', area: 'A1:B2' }, { id: 'b', area: 'A1:Z2' }, { id: 'a', cell: 'C3' }, { area: 'A1' }],
+    });
+    expect(res.map?.regions).toEqual([{ id: 'a', rect: { c1: 0, r1: 0, c2: 1, r2: 1 }, hidden: true }]);
+    expect(res.errors).toEqual([
+      'regions[1]: "A1:Z2" valt (deels) buiten de kaart (10×10)',
+      'regions[2].id: "a" bestaat al, regio overgeslagen',
+      'regions[3].id: ontbreekt',
+    ]);
   });
 
   it('JSON met tekst errond (```json uit de chat) werkt ook', () => {
@@ -73,7 +88,7 @@ describe('schema', () => {
     expect(res.map?.tokens[0]).not.toHaveProperty('kleur');
   });
 
-  it('een patch wordt (nog) geweigerd', () => {
+  it('een patch is geen kaart', () => {
     const res = parseMapObject({ type: 'patch', version: 1, map: 'Stal' });
     expect(res.map).toBeNull();
     expect(res.errors[0]).toContain('patch');

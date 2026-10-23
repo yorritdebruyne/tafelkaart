@@ -26,6 +26,11 @@ export function loadState(): Saved | null {
     if (!raw) return null;
     const saved = JSON.parse(raw) as Saved;
     if (!saved?.state?.map?.tokens || typeof saved.source !== 'string') return null;
+    // Bewaard door een oudere versie (M1)? Dan ontbreken nieuwe velden: aanvullen.
+    const s = saved.state as Partial<MapState> & { map: Partial<MapState['map']> };
+    s.patches ??= [];
+    s.paths ??= {};
+    s.map.regions ??= [];
     return saved;
   } catch {
     return null;

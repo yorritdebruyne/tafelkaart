@@ -1,0 +1,11 @@
+{
+  "type": "patch", "version": 1, "map": "Stal",
+  "tokens": {
+    "T1": { "cell": "C3" },
+    "T2": { "remove": true },
+    "T3": { "add": { "name": "T3", "side": "enemy", "cell": "G7" } },
+    "Ak": { "conditions": ["prone"] }
+  },
+  "doors": { "zadel": { "state": "open" } },
+  "reveal": ["zadelkamer"]
+}

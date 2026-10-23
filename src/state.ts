@@ -12,12 +12,14 @@ export interface MapState {
   map: MapData;
   /** Per token-id: de vakjes sinds het begin van de beurt. paths[id][0] = startvakje. */
   paths: Record<string, Cell[]>;
+  /** Vingerafdrukken van de patches die al toegepast zijn (zelfde patch twee keer = niets doen). */
+  patches: string[];
 }
 
 export function createState(map: MapData): MapState {
   const paths: Record<string, Cell[]> = {};
   for (const t of map.tokens) paths[t.id] = [t.cell];
-  return { map, paths };
+  return { map, paths, patches: [] };
 }
 
 export function getToken(state: MapState, id: string): TokenItem | undefined {
@@ -35,6 +37,7 @@ export function moveToken(state: MapState, id: string, path: Cell[]): MapState {
   if (!path.length) return state;
   const end = path[path.length - 1];
   return {
+    ...state,
     map: {
       ...state.map,
       tokens: state.map.tokens.map((t) => (t.id === id ? { ...t, cell: end } : t)),

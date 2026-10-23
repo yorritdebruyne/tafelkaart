@@ -38,3 +38,17 @@ export const TEST_MAP = `{
     { "id": "T2", "name": "T2", "side": "enemy", "cell": "D4" }
   ]
 }`;
+
+// Een testpatch voor de stal: verplaatst T1, haalt T2 weg, zet T3 erbij,
+// Akmenos ligt neer, de deur van de zadelkamer gaat open en de zadelkamer wordt zichtbaar.
+export const TEST_PATCH = `{
+  "type": "patch", "version": 1, "map": "Stal",
+  "tokens": {
+    "T1": { "cell": "C3" },
+    "T2": { "remove": true },
+    "T3": { "add": { "name": "T3", "side": "enemy", "cell": "G7" } },
+    "Ak": { "conditions": ["prone"] }
+  },
+  "doors": { "zadel": { "state": "open" } },
+  "reveal": ["zadelkamer"]
+}`;

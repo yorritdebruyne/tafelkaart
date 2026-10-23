@@ -51,3 +51,12 @@ export const SIDE: Record<'player' | 'enemy' | 'npc', string> = {
 
 /** Kleur voor alles wat de app niet kent (F18). */
 export const UNKNOWN = '#9e9e9e';
+
+/**
+ * Fog of war (F11): kleur van de mist en van de schuine streepjes erop.
+ * De streepjes zorgen dat je mist niet verwart met een "void"-vloer.
+ */
+export const FOG = {
+  color: '#1b1922',
+  hatch: 'rgba(255, 255, 255, 0.07)',
+};

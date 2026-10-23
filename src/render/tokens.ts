@@ -1,27 +1,36 @@
+import { isTokenHidden } from '../fog';
 import { isOverSpeed, pathLength } from '../rules';
 import type { TokenItem } from '../schema';
 import { getPath, type MapState } from '../state';
 import { SIDE } from '../tiles/palette';
 import { S, svgEl } from './svg';
 
-/** Tekent alle tokens. Geeft een Map id -> <g> terug, zodat we bij het slepen niets hoeven te zoeken. */
+/**
+ * Tekent alle tokens. Geeft een Map id -> <g> terug, zodat we bij het slepen niets hoeven te zoeken.
+ * Vijanden en npc's gaan in `g` (onder de mist), spelers in `players` (boven de mist).
+ * Wie volledig in de mist staat, tekenen we niet: dan verraadt ook de code niets.
+ */
 export function renderTokens(
   g: SVGGElement,
+  players: SVGGElement,
   state: MapState,
   selectedId: string | null,
 ): Map<string, SVGGElement> {
   g.replaceChildren();
+  players.replaceChildren();
   const els = new Map<string, SVGGElement>();
-  // Spelers laatst tekenen, zodat ze bovenop liggen.
   const order = { enemy: 0, npc: 1, player: 2 } as const;
-  const tokens = [...state.map.tokens].sort((a, b) => order[a.side] - order[b.side]);
+  const tokens = [...state.map.tokens]
+    .filter((t) => !isTokenHidden(state.map, t))
+    .sort((a, b) => order[a.side] - order[b.side]);
 
   for (const t of tokens) {
+    const parent = t.side === 'player' ? players : g;
     const el = svgEl('g', {
       transform: `translate(${t.cell.c * S} ${t.cell.r * S})`,
       class: `token token-${t.side}${t.side === 'player' ? ' draggable' : ''}${t.id === selectedId ? ' selected' : ''}`,
       'data-token': t.id,
-    }, g);
+    }, parent);
     const half = (t.size * S) / 2;
     svgEl('circle', { cx: half, cy: half, r: t.size * S * 0.42, fill: SIDE[t.side], class: 'token-body' }, el);
     const label = svgEl('text', {
@@ -66,6 +75,7 @@ export function updateBadge(el: SVGGElement, token: TokenItem, used: number): vo
 export function renderPaths(g: SVGGElement, state: MapState): void {
   g.replaceChildren();
   for (const t of state.map.tokens) {
+    if (isTokenHidden(state.map, t)) continue;
     const path = getPath(state, t.id);
     if (path.length < 2) continue;
     const half = (t.size * S) / 2;

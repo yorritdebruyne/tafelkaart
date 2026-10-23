@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2b2724" />
+    <title>Tafelkaart</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="title">
+        <strong>Tafelkaart</strong>
+        <span id="map-name" class="muted">geen kaart</span>
+      </div>
+      <nav class="toolbar">
+        <button id="btn-load" type="button">Kaart laden</button>
+        <button id="btn-copy" type="button" class="primary">Kopieer posities</button>
+        <button id="btn-turn" type="button">Nieuwe beurt</button>
+        <span class="zoom">
+          <button id="btn-zoom-out" type="button" aria-label="Uitzoomen">−</button>
+          <button id="btn-zoom-in" type="button" aria-label="Inzoomen">+</button>
+        </span>
+        <button id="btn-theme" type="button">Thema: auto</button>
+      </nav>
+    </header>
+
+    <section id="messages" hidden></section>
+
+    <main id="map-scroller" class="map-scroller"></main>
+
+    <section id="status" class="status"></section>
+
+    <dialog id="load-dialog">
+      <form method="dialog" class="load-form">
+        <h2>Kaart laden</h2>
+        <p class="muted">Plak de JSON van de DM hieronder. Tekst rond de JSON (zoals <code>```json</code>) mag mee.</p>
+        <textarea id="map-input" rows="10" spellcheck="false" placeholder='{ "type": "map", ... }'></textarea>
+        <div id="dialog-errors" class="dialog-errors"></div>
+        <div class="dialog-buttons">
+          <button id="btn-draw" type="button" class="primary">Tekenen</button>
+          <label class="button">Open bestand<input id="file-input" type="file" accept=".json,application/json,text/plain" hidden /></label>
+          <button id="btn-testmap" type="button">Testkaart (stal)</button>
+          <button value="close" type="submit">Sluiten</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" hidden></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "tafelkaart",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Kleine statische web-app die D&D-kaarten tekent uit JSON (M1 - Speelbaar)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:telefoon": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}

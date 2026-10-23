@@ -1,0 +1,23 @@
+{
+  "type": "map", "version": 1, "name": "Foutendemo",
+  "cols": 8, "rows": 6,
+  "floor": [
+    { "tile": "stone", "area": "A1:H6" },
+    { "tile": "marmer", "area": "F4:H6" }
+  ],
+  "walls": [
+    { "tile": "stone", "path": [[0,0],[8,0],[8,6],[0,6],[0,0]] },
+    { "tile": "stone", "path": [[4,0],[12,4]] }
+  ],
+  "doors": [
+    { "id": "d1", "cell": "D3", "side": "O", "state": "open" },
+    { "id": "d2", "cell": "D5", "side": "X" }
+  ],
+  "tokens": [
+    { "id": "A", "name": "Speler A", "side": "player", "cell": "B2", "speed": 6 },
+    { "id": "B", "name": "Speler B", "side": "player", "cell": "Z9", "speed": 6 },
+    { "id": "V1", "side": "enemy", "cell": "F2", "size": 2 },
+    { "id": "V2", "side": "draak", "cell": "C5" }
+  ],
+  "weer": "dit veld bestaat niet en wordt genegeerd"
+}

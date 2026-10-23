@@ -1,0 +1,58 @@
+// De kaart als één <svg> met een <g> (groep) per laag.
+// Volgorde = tekenvolgorde: wat later komt, ligt bovenop.
+// Lagen die nog leeg zijn (terrain, props, light, fog) vullen we in M2/M3.
+
+import type { MapState } from '../state';
+import { renderFloor } from './floor';
+import { renderGrid, renderLabels } from './grid';
+import { S, svgEl } from './svg';
+import { renderPaths, renderTokens } from './tokens';
+import { renderWalls } from './walls';
+
+export const LAYERS = [
+  'labels', 'floor', 'grid', 'terrain', 'props', 'walls', 'light', 'path', 'tokens', 'fog', 'overlay',
+] as const;
+export type LayerName = (typeof LAYERS)[number];
+
+/** Marge voor de coördinaten (letters/cijfers). */
+export const GUTTER = S * 0.6;
+const PAD = 4;
+
+export interface MapView {
+  svg: SVGSVGElement;
+  layers: Record<LayerName, SVGGElement>;
+  tokenEls: Map<string, SVGGElement>;
+}
+
+export function createMapView(): MapView {
+  const svg = svgEl('svg', { class: 'map', role: 'img', 'aria-label': 'Kaart' });
+  const layers = {} as Record<LayerName, SVGGElement>;
+  for (const name of LAYERS) layers[name] = svgEl('g', { class: `layer layer-${name}` }, svg);
+  return { svg, layers, tokenEls: new Map() };
+}
+
+/** Breedte en hoogte van de hele svg in SVG-eenheden (incl. marge). */
+export function mapExtent(state: MapState) {
+  return {
+    width: state.map.cols * S + GUTTER + PAD,
+    height: state.map.rows * S + GUTTER + PAD,
+  };
+}
+
+/** Alles opnieuw tekenen (na het laden van een kaart). */
+export function renderMap(view: MapView, state: MapState, selectedId: string | null): void {
+  const { map } = state;
+  const { width, height } = mapExtent(state);
+  view.svg.setAttribute('viewBox', `${-GUTTER} ${-GUTTER} ${width} ${height}`);
+  renderLabels(view.layers.labels, map, GUTTER);
+  renderFloor(view.layers.floor, map);
+  renderGrid(view.layers.grid, map);
+  renderWalls(view.layers.walls, map);
+  renderMoving(view, state, selectedId);
+}
+
+/** Alleen wat verandert als tokens bewegen: wegen en tokens. */
+export function renderMoving(view: MapView, state: MapState, selectedId: string | null): void {
+  renderPaths(view.layers.path, state);
+  view.tokenEls = renderTokens(view.layers.tokens, state, selectedId);
+}

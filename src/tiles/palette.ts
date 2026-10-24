@@ -109,3 +109,14 @@ export const SHADOW = { on: true, dx: 0.05, dy: 0.08, blur: 0.06, opacity: 0.55 
 
 /** Tokens: binnenkant (donker) en een dunne donkere buitenrand voor contrast. */
 export const TOKEN = { inner: '#2a2420', innerLight: '#4a403a', outline: 'rgba(0, 0, 0, 0.7)' };
+
+/**
+ * Props die je niet door kan bij het slepen (ze vullen hun vakjes). Kleine of platte
+ * dingen (tapijt, bloemen, hooi, zakken, ladder, bank, stoel, struik, puin, ...) staan
+ * hier niet in. Bij bomen (TRUNK_PROPS) houdt alleen de stam tegen: het middelste vakje.
+ */
+export const BLOCKING_PROPS = new Set([
+  'table', 'bed', 'chest', 'barrel', 'crate', 'bookshelf', 'cupboard', 'counter', 'fireplace',
+  'oven', 'pillar', 'statue', 'altar', 'well', 'trough', 'boulder', 'cart', 'anvil', 'weapon-rack',
+]);
+export const TRUNK_PROPS = new Set(['tree']);

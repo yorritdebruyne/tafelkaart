@@ -6,7 +6,9 @@
 // je bewaart gewoon de oude objecten op een stapel.
 
 import type { Cell } from './coords';
-import type { MapData, TokenItem } from './schema';
+import { isCellHidden } from './fog';
+import type { DoorState, MapData, TokenItem } from './schema';
+import { cellEdge } from './coords';
 
 export interface MapState {
   map: MapData;
@@ -14,6 +16,8 @@ export interface MapState {
   paths: Record<string, Cell[]>;
   /** Vingerafdrukken van de patches die al toegepast zijn (zelfde patch twee keer = niets doen). */
   patches: string[];
+  /** Deuren die spelers zelf open- of dichtdeden sinds de laatste "Nieuwe beurt" (voor de DM). */
+  doorNotes?: Record<string, DoorState>;
 }
 
 export function createState(map: MapData): MapState {
@@ -52,5 +56,25 @@ export function newTurn(state: MapState, id?: string): MapState {
   for (const t of state.map.tokens) {
     if (id === undefined || t.id === id) paths[t.id] = [t.cell];
   }
-  return { ...state, paths };
+  // Nieuwe beurt voor iedereen: de deur-meldingen zijn doorgegeven.
+  return id === undefined ? { ...state, paths, doorNotes: {} } : { ...state, paths };
+}
+
+/**
+ * Een speler opent of sluit een deur (tik). Alleen gewone deuren en poorten, niet op slot,
+ * en niet als de deur volledig in de mist ligt (dan zie je ze niet).
+ * Geeft dezelfde state terug als er niets mag veranderen.
+ */
+export function toggleDoor(state: MapState, id: string): MapState {
+  const door = state.map.doors.find((d) => d.id === id);
+  if (!door || door.state === 'locked' || door.tile === 'window' || door.tile === 'arch') return state;
+  const e = cellEdge(door.cell, door.side);
+  const other = { c: door.cell.c - e.nx, r: door.cell.r - e.ny };
+  if (isCellHidden(state.map, door.cell) && isCellHidden(state.map, other)) return state;
+  const next: DoorState = door.state === 'open' ? 'closed' : 'open';
+  return {
+    ...state,
+    map: { ...state.map, doors: state.map.doors.map((d) => (d.id === id ? { ...d, state: next } : d)) },
+    doorNotes: { ...state.doorNotes, [id]: next },
+  };
 }

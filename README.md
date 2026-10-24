@@ -101,6 +101,11 @@ Klik in de app op **Laden → Testkaart (stal)** en controleer:
 - [ ] Sleep Akmenos op Amara: hij blijft staan waar hij was. Sleep hem dóór Amara naar G9: dat mag.
 - [ ] Sleep Akmenos dóór een vijand (T1 of T2): hij stopt ervoor.
 - [ ] Sleep Akmenos één vakje schuin, ook een beetje slordig: de teller zegt 1, niet 2.
+- [ ] **Dorp:** sleep Akmenos tegen de kar of de waterput: hij stopt ervoor. Onder een boomkruin
+      mag je door, alleen de stam (middelste vakje) houdt tegen.
+- [ ] **Dorp:** tik op de deur van huis 1 (onder, E6): ze gaat open en je kan naar binnen.
+      Huis 2 (rode rand) is op slot. *Kopieer posities* eindigt op `(deur huis1 open)`;
+      na *Nieuwe beurt* valt die melding weg.
 
 Iets mis? Noteer wat je deed, wat je verwachtte en wat er gebeurde (screenshot helpt) en geef het aan Claude.
 
@@ -158,6 +163,8 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
 
 ## 5b. Wat M2 tot nu toe doet
 
+- **Deuren zelf openen:** tik op een gewone deur of poort om ze te openen of te sluiten (niet op slot).
+  *Kopieer posities* meldt het aan de DM tot de volgende *Nieuwe beurt*.
 - **F9** patches: plak een patch in hetzelfde venster als een kaart (of via de URL-hash).
   Tokens verplaatsen (`cell`), toevoegen (`add`), weghalen (`remove`), condities zetten (`conditions`,
   getoond vanaf M3), deuren (`state`) en verborgen regio's tonen (`reveal`).
@@ -167,7 +174,8 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
 - **F11** fog of war: `regions` met `hidden` (standaard `true`). Speler-tokens blijven zichtbaar;
   vijanden en npc's in de mist worden niet getekend en niet gekopieerd.
 - Slepen: niet door muren, dichte deuren of ramen (open deuren en bogen wel), niet schuin tussen
-  twee muren door. Niet door een zichtbare vijand. Niet eindigen op een ander zichtbaar token;
+  twee muren door. Niet door grote props (kar, put, tafel, ton, kast, ...; lijst `BLOCKING_PROPS` in
+  `palette.ts`); bij een boom alleen de stam. Niet door een zichtbare vijand. Niet eindigen op een ander zichtbaar token;
   door een bondgenoot of npc lopen mag. De DM kan via een
   patch altijd alles verzetten.
 - Tegel-lader: afbeelding in `src/tiles/prive/…` (niet op GitHub), dan `src/tiles/floor/` of

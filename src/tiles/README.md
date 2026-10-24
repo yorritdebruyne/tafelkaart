@@ -9,9 +9,10 @@ Hier begint het visuele werk. Je hoeft geen code aan te raken: bestanden toevoeg
 | `floor/` | vloeren (`dirt.svg`, `cobble.png`, …) | herhaald, één keer per vakje |
 | `props/` | meubels, bomen, kisten (`barrel.svg`, `hay.png`, …) | op het vakje of de rechthoek van de prop |
 | `palette.ts` | kleuren: vloer, muur, deur, tokens, mist, reserve-kleur per prop | effen kleur |
+| `prive/floor/`, `prive/props/` | tegels die **niet** op GitHub mogen (bv. Forgotten Adventures) | wint van de gewone map; zie `prive/README.md` |
 
 - **Bestandsnaam = tegel-id** uit de projectcontext: `src/tiles/props/trough.svg` is de tegel `trough`.
-- Formaten: `.svg`, `.png`, `.webp`, `.jpg`. SVG blijft scherp bij printen; PNG mag ook (minstens 128 × 128 px).
+- Formaten: `.svg`, `.png`, `.webp`, `.jpg`. Voor PNG: liefst ± 300–512 px per vakje (scherp bij printen op 25 mm). Staan `barrel.png` en `barrel.svg` er allebei, dan wint de PNG.
 - Teken **vierkant** (bv. `viewBox="0 0 64 64"`), met **boven = noord**. Een prop met `"rot": 90` draait met de klok mee.
 - Een prop over meerdere vakjes (`"area": "A1:B1"`) wordt **uitgerekt** over die vakjes. Teken zo'n tegel dus op die maat (bv. 128 × 64), of laat de DM losse vakjes gebruiken.
 - Een vloer-PNG met doorzichtige stukken toont daar de kleur uit `palette.ts`.

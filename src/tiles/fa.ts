@@ -21,6 +21,16 @@ export interface FaIndex {
   props: Record<string, PropEntry[]>;
   /** [pad, breedte in px, hoogte in px] */
   floor: Record<string, [string, number, number][]>;
+  /** Muren: stroken en hoekstukken, elk [pad, breedte px, hoogte px, kader x1, y1, x2, y2 (0..1)]. */
+  walls?: Record<string, { strips: WallEntry[]; connectors: WallEntry[] }>;
+}
+
+export type WallEntry = [string, number, number, number, number, number, number];
+
+export interface WallPick {
+  strip: WallEntry;
+  /** Het hoekstuk van dezelfde soort (zelfde naam vóór "_Straight_Path"), als dat er is. */
+  connector?: WallEntry;
 }
 
 export interface PropPick {
@@ -105,6 +115,21 @@ export function pickProp(
   pool = best(pool, (o) => themeScore(o.path, theme));
   const pick = pool[hash(seed) % pool.length];
   return { ...pick, scale: Math.min(1, lw / pick.w, lh / pick.h) };
+}
+
+/** Strook + passend hoekstuk voor een muurtype (één keuze per kaart en per type). */
+export function pickWall(
+  set: { strips: WallEntry[]; connectors: WallEntry[] } | undefined,
+  seed: string,
+  theme?: Theme,
+): WallPick | undefined {
+  if (!set?.strips.length) return undefined;
+  const pool = best(set.strips, ([path]) => themeScore(path, theme));
+  const strip = pool[hash(seed) % pool.length];
+  const name = strip[0].slice(strip[0].lastIndexOf('/') + 1);
+  const base = name.replace(/_Straight_Path\.png$|_Path\.png$/i, '');
+  const connector = set.connectors.find(([p]) => p.slice(p.lastIndexOf('/') + 1).startsWith(`${base}_Connector`));
+  return { strip, connector };
 }
 
 export function pickFloor(

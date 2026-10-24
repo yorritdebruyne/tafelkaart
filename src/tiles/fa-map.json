@@ -58,6 +58,14 @@
     "weapon-rack": [{ "dir": "!Core_Settlements/Combat/Weapons/Weapon_Racks", "match": "^Weapon_Rack_" }],
     "anvil":     [{ "dir": "!Core_Settlements/Workplace_Equipment/Smithing", "match": "^Anvil" }]
   },
+  "walls": {
+    "_uitleg": "Muren: 'match' = lange strook die herhaald wordt langs de muur, 'connector' = hoekstuk op elk knikpunt en uiteinde.",
+    "stone":  [{ "dir": "!Core_Settlements/Structures/Building/Walls_and_Curbs/Wall_Stone_A", "match": "^Wall_Stone_.*_A_Straight_Path\\.png$", "connector": "^Wall_Stone_.*_A_Connector_A_1x1\\.png$" }],
+    "wood":   [{ "dir": "!Core_Settlements/Structures/Building/Walls_and_Curbs/Wall_Wood_A", "match": "^Wall_Wood_.*_A_Straight_Path\\.png$", "connector": "^Wall_Wood_.*_A_Connector_A_1x1\\.png$" }],
+    "brick":  [{ "dir": "!Core_Settlements/Structures/Building/Walls_and_Curbs/Wall_Brick_A", "match": "^Wall_Brick_.*_A_Straight_Path\\.png$", "connector": "^Wall_Brick_.*_A_Connector_A_1x1\\.png$" }],
+    "fence":  [{ "dir": "!Core_Settlements/Structures/Building/Railings_and_Fences/Fence_Wood_A", "match": "^Fence_Wood_.*_Path\\.png$" }],
+    "hedge":  [{ "dir": "Woodlands/Botanical_Garden_Settlement/Structures/Hedgemaze", "match": "_Path\\.png$" }]
+  },
   "floor": {
     "wood":   [{ "dir": "!Core_Settlements/Textures/Wooden_Floors", "match": "^Wooden_Flooring_" }],
     "stone":  [{ "dir": "!Core_Settlements/Textures/Stone_Floors", "match": "^Flat_Stone_Floor_", "ext": "jpg" }],

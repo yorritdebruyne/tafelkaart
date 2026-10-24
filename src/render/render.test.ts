@@ -135,4 +135,30 @@ describe('render', () => {
     // Zonder muur: gewoon in het midden.
     expect(props[2].querySelector('image')!.getAttribute('y')).toBe('-32');
   });
+
+  it('muren met FA-strook: rechthoek per stuk muur, hoekstuk op elk punt', () => {
+    setFaIndex({
+      pxPerCell: 200, themes: { standaard: { prefer: [], avoid: [] } }, props: {}, floor: {},
+      walls: {
+        wood: {
+          strips: [['W/Wall_Wood_Ashen_A_Straight_Path.png', 1650, 200, 0, 0.39, 1, 0.61]],
+          connectors: [['W/Wall_Wood_Ashen_A_Connector_A_1x1.png', 200, 200, 0.23, 0.39, 0.78, 0.61]],
+        },
+      },
+    });
+    const res = parseMapObject({
+      type: 'map', version: 1, name: 'X', cols: 4, rows: 4,
+      walls: [{ tile: 'wood', path: [[0, 0], [4, 0], [4, 4]] }, { tile: 'palisade', path: [[0, 2], [2, 2]] }],
+    });
+    const view = createMapView();
+    renderMap(view, createState(res.map!), null);
+    const wall = view.layers.walls.querySelector('.wall-textured')!;
+    expect(wall.querySelectorAll('rect')).toHaveLength(2);
+    expect(wall.querySelectorAll('image.wall-connector')).toHaveLength(3);
+    expect(wall.querySelectorAll('g')[1].getAttribute('transform')).toBe('translate(256 0) rotate(90)');
+    const pattern = view.layers.walls.querySelector('pattern')!;
+    expect([pattern.getAttribute('width'), pattern.getAttribute('y')]).toEqual(['528', '-32']); // 1650 px = 8,25 vakjes
+    // Palissade heeft geen FA-strook: gewone lijn.
+    expect(view.layers.walls.querySelectorAll('polyline')).toHaveLength(1);
+  });
 });

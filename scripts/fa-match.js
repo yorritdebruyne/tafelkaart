@@ -22,17 +22,19 @@ export function sizeFromName(name) {
 export function compileMap(map) {
   const deny = new RegExp(map.deny, 'i');
   const rules = [];
-  for (const kind of ['props', 'floor']) {
+  for (const kind of ['props', 'floor', 'walls']) {
     for (const [id, list] of Object.entries(map[kind] ?? {})) {
+      if (id.startsWith('_')) continue;
       for (const r of list) {
-        rules.push({
+        const base = {
           kind,
           id,
           dir: r.dir,
-          match: new RegExp(r.match, 'i'),
           exclude: r.exclude ? new RegExp(r.exclude, 'i') : null,
           ext: r.ext ? r.ext.toLowerCase() : null,
-        });
+        };
+        rules.push({ ...base, match: new RegExp(r.match, 'i'), part: kind === 'walls' ? 'strip' : undefined });
+        if (r.connector) rules.push({ ...base, match: new RegExp(r.connector, 'i'), part: 'connector' });
       }
     }
   }
@@ -42,22 +44,26 @@ export function compileMap(map) {
 /**
  * Bij welke tegel-id's hoort dit bestand? (Meestal 0 of 1.)
  * `rel` = pad binnen de bibliotheek, met "/".
+ * Voor muren zegt `part` of het een strook ("strip") of een hoekstuk ("connector") is.
  */
 export function classify(compiled, rel) {
   if (compiled.deny.test(rel)) return [];
   const slash = rel.lastIndexOf('/');
   const dir = rel.slice(0, slash);
   const file = rel.slice(slash + 1);
-  if (/\/Paths?(\/|$)/i.test(dir)) return [];
+  const inPaths = /\/Paths?(\/|$)/i.test(dir);
   const ext = file.slice(file.lastIndexOf('.') + 1).toLowerCase();
   const out = [];
   for (const r of compiled.rules) {
     if (!(dir === r.dir || dir.startsWith(r.dir + '/'))) continue;
+    if (inPaths && r.kind !== 'walls') continue; // "Paths"-mappen: alleen voor muren
     if (!r.match.test(file) || (r.exclude && r.exclude.test(file))) continue;
     if (r.kind === 'props' && !sizeFromName(file)) continue;
-    if (r.kind === 'floor' && !['jpg', 'jpeg', 'png', 'webp'].includes(ext)) continue;
+    if (r.kind !== 'props' && !['jpg', 'jpeg', 'png', 'webp'].includes(ext)) continue;
     if (r.ext && ext !== r.ext) continue;
-    if (!out.some((o) => o.kind === r.kind && o.id === r.id)) out.push({ kind: r.kind, id: r.id });
+    if (!out.some((o) => o.kind === r.kind && o.id === r.id && o.part === r.part)) {
+      out.push(r.part ? { kind: r.kind, id: r.id, part: r.part } : { kind: r.kind, id: r.id });
+    }
   }
   return out;
 }

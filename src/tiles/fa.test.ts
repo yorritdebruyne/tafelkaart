@@ -45,8 +45,19 @@ describe('variant kiezen (FA)', () => {
       ['b/Barrel_Wood_Dark_A1_1x1.png', 1, 1],
     ];
     expect(themeScore(barrels[1][0], standaard)).toBe(-9);
-    expect(pickProp(barrels, 1, 1, 'x', standaard)!.path).toBe(barrels[0][0]);
-    expect(pickProp(barrels, 1, 1, 'x', verlaten)!.path).toBe(barrels[1][0]);
+    expect(pickProp(barrels, 1, 1, 'x', { theme: standaard })!.path).toBe(barrels[0][0]);
+    expect(pickProp(barrels, 1, 1, 'x', { theme: verlaten })!.path).toBe(barrels[1][0]);
+  });
+
+  it('muur-props: liefst het woord "Wall", niet draaien, kader mee', () => {
+    const ladders: [string, number, number, ...number[]][] = [
+      ['l/Ladder_Wood_Ashen_Fallen_A1_2x1.png', 2, 1],
+      ['l/Ladder_Wood_Ashen_Wall_A1_1x1.png', 1, 1, 0.1, 0.43, 0.9, 0.58],
+    ];
+    const p = pickProp(ladders, 1, 1, 'x', { prefer: 'Wall', noTurn: true })!;
+    expect(p.path).toMatch(/_Wall_/);
+    expect(p.box).toEqual([0.1, 0.43, 0.9, 0.58]);
+    expect(pickProp([['l/Shelf_2x1.png', 2, 1]], 1, 2, 'x', { noTurn: true })!.turn).toBe(false);
   });
 
   it('geen kandidaten: niets', () => {

@@ -110,4 +110,29 @@ describe('render', () => {
     expect(pattern.getAttribute('width')).toBe('320'); // 1000 px = 5 vakjes
     expect(pattern.querySelector('image')?.getAttribute('href')).toBe('fa/Dirt/Dirt_A_01.jpg');
   });
+
+  it('muur-prop: ladder draait naar de muur en ligt ertegen', () => {
+    setFaIndex({
+      pxPerCell: 200,
+      themes: { standaard: { prefer: [], avoid: [] } },
+      wall: { ladder: { prefer: 'Wall' } },
+      props: { ladder: [['L/Ladder_Wood_Ashen_Wall_A1_1x1.png', 1, 1, 0.1, 0.43, 0.9, 0.58]] },
+      floor: {},
+    });
+    const res = parseMapObject({
+      type: 'map', version: 1, name: 'X', cols: 4, rows: 4,
+      walls: [{ path: [[0, 0], [4, 0], [4, 4]] }],
+      props: [{ tile: 'ladder', cell: 'B1' }, { tile: 'ladder', cell: 'D3' }, { tile: 'ladder', cell: 'B3' }, { tile: 'ladder', cell: 'D1', rot: 180 }],
+    });
+    const view = createMapView();
+    renderMap(view, createState(res.map!), null);
+    const props = [...view.layers.props.querySelectorAll('[data-prop]')];
+    const rot = (i: number) => /rotate\((\d+)\)/.exec(props[i].getAttribute('transform')!)![1];
+    expect([rot(0), rot(1), rot(2), rot(3)]).toEqual(['0', '90', '0', '180']); // noordmuur, oostmuur, geen muur, DM-rot blijft
+    // Tegen de noordmuur: bovenkant van de tekening (43 % van 64) ligt op -32 + 5,12.
+    const img = props[0].querySelector('image')!;
+    expect(Number(img.getAttribute('y')) + 0.43 * 64).toBeCloseTo(-32 + 64 * 0.08, 5);
+    // Zonder muur: gewoon in het midden.
+    expect(props[2].querySelector('image')!.getAttribute('y')).toBe('-32');
+  });
 });

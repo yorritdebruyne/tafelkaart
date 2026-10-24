@@ -90,6 +90,13 @@ export interface PropImage {
   h: number;
   /** Kwartslag draaien om te passen. */
   turn: boolean;
+  /** Waar de tekening in de afbeelding staat (0..1): x1, y1, x2, y2. */
+  box?: [number, number, number, number];
+}
+
+/** Hoort deze prop tegen een muur (FA-index), en gebruiken we geen eigen afbeelding? */
+export function isWallProp(id: string): boolean {
+  return !INDEX.props[id] && !!fa?.wall?.[id];
 }
 
 /**
@@ -99,9 +106,14 @@ export interface PropImage {
 export function propImage(id: string, lw: number, lh: number, seed: string): PropImage | undefined {
   const own = INDEX.props[id];
   if (own) return { url: own, w: lw, h: lh, turn: false };
-  const pick = pickProp(fa?.props[id], lw, lh, seed, fa?.themes[sfeer]);
+  const wall = fa?.wall?.[id];
+  const pick = pickProp(fa?.props[id], lw, lh, seed, {
+    theme: fa?.themes[sfeer],
+    prefer: wall?.prefer,
+    noTurn: !!wall,
+  });
   if (!pick) return undefined;
-  return { url: faUrl(pick.path), w: pick.w * pick.scale, h: pick.h * pick.scale, turn: pick.turn };
+  return { url: faUrl(pick.path), w: pick.w * pick.scale, h: pick.h * pick.scale, turn: pick.turn, box: pick.box };
 }
 
 /** Afbeelding voor een vloer: adres + grootte van één herhaling, in vakjes. */

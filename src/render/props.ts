@@ -9,27 +9,55 @@
 // Rotatie: we tekenen de prop rond het midden van zijn vakje(s). Bij 90° of
 // 270° wisselen breedte en hoogte, zodat een prop van 2×1 vakjes na draaien
 // nog altijd netjes op zijn 2×1 (of 1×2) vakjes ligt.
+//
+// Muur-props (ladder, boekenkast, kast, haard, wapenrek): staat er een muur naast
+// en geeft de DM geen "rot", dan draaien we de prop naar die muur en schuiven we de
+// tekening ertegen. "Boven" (noord) in de afbeelding is de kant die tegen de muur komt.
 
+import type { Rect } from '../coords';
+import { type Blockers, buildBlockers, canStep } from '../movement';
 import type { MapData, PropItem } from '../schema';
-import { propImage } from '../tiles';
+import { isWallProp, propImage } from '../tiles';
 import { PROP, UNKNOWN } from '../tiles/palette';
 import { S, svgEl } from './svg';
 
+/** Halve muurdikte: zoveel ruimte laten we tussen de muurlijn en de prop. */
+const WALL_GAP = S * 0.08;
+
 export function renderProps(g: SVGGElement, map: MapData): void {
   g.replaceChildren();
-  for (const p of map.props) renderProp(g, p);
+  const blockers = buildBlockers(map);
+  for (const p of map.props) renderProp(g, p, blockers);
 }
 
-function renderProp(g: SVGGElement, p: PropItem): void {
+/**
+ * Aan welke kant van de rechthoek staat over de hele lengte een muur (of dichte deur)?
+ * Volgorde bij een hoek: noord, west, oost, zuid. Geeft de rotatie die "boven" naar die muur draait.
+ */
+export function wallRotation(b: Blockers, rect: Rect): number | null {
+  const { c1, r1, c2, r2 } = rect;
+  const along = (cells: [number, number, number, number][]) =>
+    cells.every(([c, r, dc, dr]) => !canStep(b, { c, r }, { c: c + dc, r: r + dr }));
+  const range = (a: number, z: number) => Array.from({ length: z - a + 1 }, (_, i) => a + i);
+  if (along(range(c1, c2).map((c) => [c, r1, 0, -1]))) return 0; // noord
+  if (along(range(r1, r2).map((r) => [c1, r, -1, 0]))) return 270; // west
+  if (along(range(r1, r2).map((r) => [c2, r, 1, 0]))) return 90; // oost
+  if (along(range(c1, c2).map((c) => [c, r2, 0, 1]))) return 180; // zuid
+  return null;
+}
+
+function renderProp(g: SVGGElement, p: PropItem, blockers: Blockers): void {
   const { c1, r1, c2, r2 } = p.rect;
   const w = (c2 - c1 + 1) * S;
   const h = (r2 - r1 + 1) * S;
-  const quarter = p.rot % 180 === 90;
+  const toWall = p.rot === 0 && isWallProp(p.tile) ? wallRotation(blockers, p.rect) : null;
+  const rot = toWall ?? p.rot;
+  const quarter = rot % 180 === 90;
   // Afmetingen "voor het draaien": bij een kwartslag omgewisseld.
   const lw = quarter ? h : w;
   const lh = quarter ? w : h;
   const el = svgEl('g', {
-    transform: `translate(${c1 * S + w / 2} ${r1 * S + h / 2}) rotate(${p.rot})`,
+    transform: `translate(${c1 * S + w / 2} ${r1 * S + h / 2}) rotate(${rot})`,
     class: 'prop',
     'data-prop': p.tile,
   }, g);
@@ -45,8 +73,14 @@ function renderProp(g: SVGGElement, p: PropItem): void {
     const target = img.turn ? svgEl('g', { transform: 'rotate(90)' }, el) : el;
     const dw = img.turn ? ih : iw;
     const dh = img.turn ? iw : ih;
+    // Tegen de muur: schuif tot de bovenkant van de tekening tegen de muurlijn ligt.
+    let dy = 0;
+    if (toWall !== null && !img.turn) {
+      const top = -dh / 2 + (img.box ? img.box[1] : 0) * dh;
+      dy = -lh / 2 + WALL_GAP - top;
+    }
     svgEl('image', {
-      href: img.url, x: -dw / 2, y: -dh / 2, width: dw, height: dh, preserveAspectRatio: 'xMidYMid meet',
+      href: img.url, x: -dw / 2, y: -dh / 2 + dy, width: dw, height: dh, preserveAspectRatio: 'xMidYMid meet',
     }, target);
     return;
   }
@@ -63,7 +97,7 @@ function renderProp(g: SVGGElement, p: PropItem): void {
   const label = svgEl('text', {
     x: 0, y: 0,
     'font-size': Math.min(S * 0.22, ((lw - 2 * inset) * 0.95) / Math.max(1, p.tile.length * 0.6)),
-    transform: `rotate(${-p.rot})`, // de naam blijft rechtop leesbaar
+    transform: `rotate(${-rot})`, // de naam blijft rechtop leesbaar
     class: 'prop-label',
   }, el);
   label.textContent = p.tile;

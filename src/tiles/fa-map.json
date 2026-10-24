@@ -7,6 +7,14 @@
     "rijk": { "prefer": ["Fancy", "Walnut", "Red", "Gold", "Brass", "Polished", "Marble"], "avoid": ["Broken", "Rusty", "Fallen", "Leaking", "Damaged", "Ripped", "Burnt", "Rotten"] },
     "verlaten": { "prefer": ["Broken", "Rusty", "Fallen", "Damaged", "Leaking", "Ripped", "Rotten", "Dark"], "avoid": ["Fancy", "Gold", "Polished"] }
   },
+  "wall": {
+    "_uitleg": "Props die tegen een muur horen. Staat er een muur naast het vakje (en geeft de DM geen 'rot'), dan draait de app de prop naar die muur en schuift ze ertegen. 'prefer' = kies liefst bestanden met dit woord.",
+    "ladder": { "prefer": "Wall" },
+    "bookshelf": {},
+    "cupboard": {},
+    "fireplace": {},
+    "weapon-rack": {}
+  },
   "props": {
     "table":     [{ "dir": "!Core_Settlements/Furniture/Tables", "match": "^(Round_|Square_|Long_|Dining_|Rectangle_|Rustic_)?Table_" }],
     "chair":     [{ "dir": "!Core_Settlements/Furniture/Seating/Chairs", "match": "^Chair_" }],

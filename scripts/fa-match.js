@@ -62,6 +62,29 @@ export function classify(compiled, rel) {
   return out;
 }
 
+/**
+ * Waar staat er echt iets in een (gedecodeerde) PNG? Als deel van de breedte en hoogte (0..1).
+ * `png` = { width, height, data } met RGBA-bytes, zoals pngjs het teruggeeft.
+ * Nodig om een prop tegen de muur te schuiven: FA tekent ze in het midden van hun vierkant.
+ */
+export function alphaBox(png, threshold = 16) {
+  const { width, height, data } = png;
+  let x1 = width, y1 = height, x2 = -1, y2 = -1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (data[(y * width + x) * 4 + 3] > threshold) {
+        if (x < x1) x1 = x;
+        if (x > x2) x2 = x;
+        if (y < y1) y1 = y;
+        if (y > y2) y2 = y;
+      }
+    }
+  }
+  if (x2 < 0) return null;
+  const r = (v) => Math.round(v * 1000) / 1000;
+  return [r(x1 / width), r(y1 / height), r((x2 + 1) / width), r((y2 + 1) / height)];
+}
+
 /** Breedte en hoogte in pixels uit de kop van een PNG- of JPG-bestand. */
 export function imageSize(buf) {
   // PNG: vaste plek in de IHDR-chunk.

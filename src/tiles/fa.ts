@@ -10,11 +10,15 @@
 //      de plek op de kaart, zodat elk vakje er bij elke herlading hetzelfde uitziet.
 
 export interface Theme { prefer: string[]; avoid: string[]; }
+/** [pad, breedte in vakjes, hoogte in vakjes, en voor muur-props: kader x1, y1, x2, y2 (0..1)] */
+export type PropEntry = [string, number, number, ...number[]];
+
 export interface FaIndex {
   pxPerCell: number;
   themes: Record<string, Theme>;
-  /** [pad, breedte in vakjes, hoogte in vakjes] */
-  props: Record<string, [string, number, number][]>;
+  /** Props die tegen een muur horen; `prefer` = liefst bestanden met dit woord. */
+  wall?: Record<string, { prefer?: string }>;
+  props: Record<string, PropEntry[]>;
   /** [pad, breedte in px, hoogte in px] */
   floor: Record<string, [string, number, number][]>;
 }
@@ -28,6 +32,16 @@ export interface PropPick {
   turn: boolean;
   /** < 1 als de afbeelding groter is dan de vakjes en ingeschaald wordt. */
   scale: number;
+  /** Waar de tekening in de afbeelding staat (0..1), als bekend. */
+  box?: [number, number, number, number];
+}
+
+export interface PickOptions {
+  theme?: Theme;
+  /** Alleen bestanden met dit woord, als die er zijn (bv. "Wall" voor ladders tegen de muur). */
+  prefer?: string;
+  /** Niet een kwartslag draaien (muur-props: de achterkant moet tegen de muur). */
+  noTurn?: boolean;
 }
 
 /** Kleine, vaste hash (FNV-1a) van een tekst -> getal. */
@@ -59,17 +73,24 @@ function best<T>(items: T[], score: (t: T) => number): T[] {
 }
 
 export function pickProp(
-  cands: [string, number, number][] | undefined,
+  cands: PropEntry[] | undefined,
   lw: number,
   lh: number,
   seed: string,
-  theme?: Theme,
+  opts: PickOptions = {},
 ): PropPick | undefined {
   if (!cands?.length) return undefined;
+  const { theme, prefer, noTurn } = opts;
+  if (prefer) {
+    const word = new RegExp(`(^|[_/])${prefer}(_|\\.)`, 'i');
+    const withWord = cands.filter(([path]) => word.test(path));
+    if (withWord.length) cands = withWord;
+  }
   // Elke kandidaat in beide richtingen.
-  const options = cands.flatMap(([path, w, h]) => {
-    const o = [{ path, w, h, turn: false }];
-    if (w !== h) o.push({ path, w: h, h: w, turn: true });
+  const options = cands.flatMap(([path, w, h, ...rest]) => {
+    const box = rest.length === 4 ? (rest as [number, number, number, number]) : undefined;
+    const o = [{ path, w, h, turn: false, box }];
+    if (w !== h && !noTurn) o.push({ path, w: h, h: w, turn: true, box });
     return o;
   });
   const fits = options.filter((o) => o.w <= lw && o.h <= lh);

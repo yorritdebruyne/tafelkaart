@@ -60,13 +60,14 @@ export function renderFog(g: SVGGElement, map: MapData): void {
     const clip = svgEl('clipPath', { id: `fog-clip-${r.id.replace(/[^a-zA-Z0-9_-]/g, '_')}` }, defs);
     svgEl('path', { d }, clip);
     const clouds = svgEl('g', { 'clip-path': `url(#${clip.id})` }, group);
-    const count = Math.max(3, Math.round(((c2 - c1 + 1) * (r2 - r1 + 1)) / 2));
+    // Veel kleine, vage wolkjes (geen paar grote vlekken): dat leest als mist.
+    const count = Math.max(4, Math.round((c2 - c1 + 1) * (r2 - r1 + 1) * 1.2));
     for (let i = 0; i < count; i++) {
       const rnd = (k: string) => hash(`${seed}|${i}|${k}`) / 0xffffffff;
       svgEl('circle', {
         cx: x + rnd('x') * w,
         cy: y + rnd('y') * h,
-        r: S * (0.8 + rnd('r') * 1.2),
+        r: S * (0.45 + rnd('r') * 0.6),
         fill: `url(#${i % 3 === 0 ? 'fog-cloud-dark' : 'fog-cloud-light'})`,
       }, clouds);
     }

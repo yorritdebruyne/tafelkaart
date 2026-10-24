@@ -69,5 +69,13 @@ describe('variant kiezen (FA)', () => {
     const dirt: [string, number, number][] = [['d/Dirt_A_01.jpg', 1200, 1200], ['d/Dirt_B_01.jpg', 600, 600]];
     expect(pickFloor(dirt, 'Stal|dirt')).toEqual(pickFloor(dirt, 'Stal|dirt'));
     expect(hash('a')).not.toBe(hash('b'));
+    // x en y van hetzelfde punt mogen niet samenhangen (anders liggen dingen op een lijn).
+    const xs = Array.from({ length: 200 }, (_, i) => hash(`p|${i}|x`) / 0xffffffff);
+    const ys = Array.from({ length: 200 }, (_, i) => hash(`p|${i}|y`) / 0xffffffff);
+    const mean = (a: number[]) => a.reduce((s, v) => s + v, 0) / a.length;
+    const mx = mean(xs), my = mean(ys);
+    const cov = mean(xs.map((x, i) => (x - mx) * (ys[i] - my)));
+    const corr = cov / Math.sqrt(mean(xs.map((x) => (x - mx) ** 2)) * mean(ys.map((y) => (y - my) ** 2)));
+    expect(Math.abs(corr)).toBeLessThan(0.2);
   });
 });

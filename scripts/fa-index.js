@@ -47,7 +47,7 @@ if (!dir || !existsSync(dir)) {
 const map = JSON.parse(readFileSync(join(root, 'src/tiles/fa-map.json'), 'utf8'));
 const compiled = compileMap(map);
 const wall = Object.fromEntries(Object.entries(map.wall ?? {}).filter(([id]) => !id.startsWith('_')));
-const index = { pxPerCell: map.pxPerCell, themes: map.themes, wall, props: {}, floor: {} };
+const index = { pxPerCell: map.pxPerCell, themes: map.themes, wall, props: {}, floor: {}, walls: {} };
 
 console.log(`FA doorzoeken in ${dir} ...`);
 let files = 0;
@@ -60,8 +60,19 @@ for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) 
   const url = full.slice(dir.length).replace(/\\/g, '/').replace(/^\/+/, '');
   const hits = classify(compiled, relFromFa(url));
   if (!hits.length) continue;
-  for (const { kind, id } of hits) {
-    if (kind === 'props') {
+  for (const { kind, id, part } of hits) {
+    if (kind === 'walls') {
+      // Strook of hoekstuk: afmetingen + waar de muur in de afbeelding staat.
+      try {
+        const png = PNG.sync.read(readFileSync(full));
+        const box = alphaBox(png);
+        if (!box) continue;
+        const w = (index.walls[id] ??= { strips: [], connectors: [] });
+        (part === 'connector' ? w.connectors : w.strips).push([url, png.width, png.height, ...box]);
+      } catch {
+        /* onleesbare PNG */
+      }
+    } else if (kind === 'props') {
       const s = sizeFromName(entry.name);
       const item = [url, s.w, s.h];
       // Muur-props: ook waar de tekening in het vierkant staat (om ze tegen de muur te schuiven).
@@ -86,8 +97,8 @@ for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) 
 mkdirSync(join(root, 'src/tiles/prive'), { recursive: true });
 writeFileSync(join(root, 'src/tiles/prive/fa-index.json'), JSON.stringify(index));
 console.log(`${files} bestanden bekeken, ${used} gebruikt.`);
-for (const kind of ['props', 'floor']) {
-  const ids = Object.keys(map[kind]);
+for (const kind of ['props', 'floor', 'walls']) {
+  const ids = Object.keys(map[kind] ?? {}).filter((id) => !id.startsWith('_'));
   const missing = ids.filter((id) => !index[kind][id]);
   console.log(`${kind}: ${ids.length - missing.length}/${ids.length} tegels gevonden${missing.length ? ` (niet: ${missing.join(', ')})` : ''}`);
 }

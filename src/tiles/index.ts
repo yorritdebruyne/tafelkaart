@@ -14,7 +14,7 @@
 // bestanden die op het patroon passen. Met '?url' krijgen we per bestand een
 // adres; de browser laadt de afbeelding pas als ze op de kaart komt.
 
-import { type FaIndex, pickFloor, pickProp } from './fa';
+import { type FaIndex, pickFloor, pickProp, pickWall } from './fa';
 
 const FILES = import.meta.glob(
   ['./{floor,props}/*.{svg,png,webp,jpg,jpeg}', './prive/{floor,props}/*.{svg,png,webp,jpg,jpeg}'],
@@ -123,6 +123,26 @@ export function floorImage(id: string, seed: string): { url: string; w: number; 
   const pick = pickFloor(fa?.floor[id], seed, fa?.themes[sfeer]);
   if (!pick || !fa) return undefined;
   return { url: faUrl(pick.path), w: pick.px / fa.pxPerCell, h: pick.py / fa.pxPerCell };
+}
+
+/** Muur uit FA, in vakjes. `band` = boven- en onderkant van de muur in de strook (0..1). */
+export interface WallImage {
+  strip: { url: string; w: number; h: number; band: [number, number] };
+  connector?: { url: string; w: number; h: number };
+}
+
+export function wallImage(id: string, seed: string): WallImage | undefined {
+  if (!fa) return undefined;
+  const pick = pickWall(fa.walls?.[id], seed, fa.themes[sfeer]);
+  if (!pick) return undefined;
+  const px = fa.pxPerCell;
+  const [sPath, sw, sh, , sy1, , sy2] = pick.strip;
+  const out: WallImage = { strip: { url: faUrl(sPath), w: sw / px, h: sh / px, band: [sy1, sy2] } };
+  if (pick.connector) {
+    const [cPath, cw, ch] = pick.connector;
+    out.connector = { url: faUrl(cPath), w: cw / px, h: ch / px };
+  }
+  return out;
 }
 
 /** Alle tegel-id's met een vaste afbeelding. */

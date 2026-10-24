@@ -53,12 +53,18 @@ export const SIDE: Record<'player' | 'enemy' | 'npc', string> = {
 export const UNKNOWN = '#9e9e9e';
 
 /**
- * Fog of war (F11): kleur van de mist en van de schuine streepjes erop.
- * De streepjes zorgen dat je mist niet verwart met een "void"-vloer.
+ * Fog of war (F11): donkere mist met lichtere en donkere "wolken" erin en een zachte,
+ * golvende rand. De wolken zorgen dat je mist niet verwart met een "void"-vloer.
  */
 export const FOG = {
-  color: '#1b1922',
-  hatch: 'rgba(255, 255, 255, 0.07)',
+  /** Kleur van de mist zelf. */
+  color: '#15131b',
+  /** Lichte wolken (midden van de vlek; naar de rand wordt het doorzichtig). */
+  cloudLight: 'rgba(150, 140, 185, 0.16)',
+  /** Donkere wolken. */
+  cloudDark: 'rgba(0, 0, 0, 0.45)',
+  /** Doorzichtigheid van de zachte buitenrand (0 = onzichtbaar, 1 = vol). */
+  edgeOpacity: 0.55,
 };
 
 /**
@@ -85,3 +91,12 @@ export const PROP: Record<string, string> = {
   ...group(SMALL, ['sacks', 'hay', 'cart', 'lantern', 'candle', 'brazier', 'bones', 'weapon-rack', 'anvil']),
   ...group(MARKER, ['trap-marker']),
 };
+
+/**
+ * Vloeren met een golvende rand (natuurlijke ondergrond). Ze lopen een beetje over de
+ * vloer eronder, zodat je de rechthoeken van de DM niet ziet. Gebouwde vloeren
+ * (hout, tegels, tapijt, ...) staan hier niet in en houden een rechte rand.
+ */
+export const ORGANIC_FLOORS = new Set([
+  'dirt', 'grass', 'sand', 'snow', 'cobble', 'water-shallow', 'water-deep', 'lava',
+]);

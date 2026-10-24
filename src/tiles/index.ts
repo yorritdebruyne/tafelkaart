@@ -124,7 +124,7 @@ export function propImage(id: string, lw: number, lh: number, seed: string): Pro
 export function floorImage(id: string, seed: string): { url: string; w: number; h: number } | undefined {
   const own = INDEX.floor[id];
   if (own) return { url: own, w: 1, h: 1 };
-  const pick = pickFloor(fa?.floor[id], seed, fa?.themes[sfeer]);
+  const pick = pickFloor(fa?.floor[id], seed, fa?.themes[sfeer], id);
   if (!pick || !fa) return undefined;
   return { url: faUrl(pick.path), w: pick.px / fa.pxPerCell, h: pick.py / fa.pxPerCell };
 }

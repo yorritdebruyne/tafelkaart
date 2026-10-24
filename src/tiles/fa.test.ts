@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { hash, pickFloor, pickProp, themeScore } from './fa';
+import { floorScore, hash, pickFloor, pickProp, themeScore } from './fa';
+import faMap from './fa-map.json';
 
 const standaard = { prefer: ['Ashen'], avoid: ['Broken'] };
 const verlaten = { prefer: ['Broken'], avoid: ['Fancy'] };
@@ -77,5 +78,30 @@ describe('variant kiezen (FA)', () => {
     const cov = mean(xs.map((x, i) => (x - mx) * (ys[i] - my)));
     const corr = cov / Math.sqrt(mean(xs.map((x) => (x - mx) ** 2)) * mean(ys.map((y) => (y - my) ** 2)));
     expect(Math.abs(corr)).toBeLessThan(0.2);
+  });
+
+  it('vloer: elke sfeer zijn eigen familie', () => {
+    const dirt: [string, number, number][] = [
+      ['d/Dirt_A_01.jpg', 1000, 1000], ['d/Dirt_B_01.jpg', 1000, 1000],
+      ['d/Rocky_Dirt_01_A.jpg', 1000, 1000], ['d/Cracked_Dirt_A_01.jpg', 1000, 1000],
+    ];
+    const theme = (fam: string) => ({ prefer: [], avoid: [], floors: { dirt: fam } });
+    for (const seed of ['Stal|dirt', 'Dorp|dirt', 'x']) {
+      expect(pickFloor(dirt, seed, theme('^Cracked_Dirt_'), 'dirt')!.path).toMatch(/Cracked_Dirt/);
+      expect(pickFloor(dirt, seed, theme('^Rocky_Dirt_'), 'dirt')!.path).toMatch(/Rocky_Dirt/);
+      expect(pickFloor(dirt, seed, theme('^Dirt_'), 'dirt')!.path).toMatch(/\/Dirt_/);
+    }
+    // Familie voor een andere vloer: geen invloed; geen familie gevonden: gewoon een van allen.
+    expect(floorScore('d/Cracked_Dirt_A_01.jpg', theme('^Cracked_Dirt_'), 'grass')).toBe(0);
+    expect(pickFloor(dirt, 'x', theme('^Mud_'), 'dirt')).toBeDefined();
+  });
+
+  it('fa-map.json: sfeerfamilies zijn geldige regex voor bestaande vloeren', () => {
+    for (const [name, theme] of Object.entries(faMap.themes) as [string, { floors?: Record<string, string> }][]) {
+      for (const [id, fam] of Object.entries(theme.floors ?? {})) {
+        expect(faMap.floor, `${name}.${id}`).toHaveProperty(id);
+        expect(() => new RegExp(fam)).not.toThrow();
+      }
+    }
   });
 });

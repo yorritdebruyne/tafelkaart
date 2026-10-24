@@ -10,7 +10,7 @@
 // Standaard bewaart het script per soort en per grootte een handvol varianten (genoeg voor
 // afwisseling en voor elke sfeer). Alles houden:  npm run fa-index -- --alles
 
-import { existsSync, openSync, readFileSync, readSync, closeSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, openSync, readFileSync, readSync, closeSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
@@ -54,6 +54,8 @@ if (!dir || !existsSync(dir)) {
 const map = JSON.parse(readFileSync(join(root, 'src/tiles/fa-map.json'), 'utf8'));
 const compiled = compileMap(map);
 const wall = Object.fromEntries(Object.entries(map.wall ?? {}).filter(([id]) => !id.startsWith('_')));
+// Vloertexturen zwaarder dan dit slaan we over (sommige FA-gras is 14 MB: traag op de Raspberry Pi).
+const floorMaxBytes = (map.floorMaxKB ?? 2000) * 1024;
 const index = { pxPerCell: map.pxPerCell, themes: map.themes, wall, props: {}, floor: {}, walls: {}, doors: {}, decor: {} };
 
 console.log(`FA doorzoeken in ${dir} ...`);
@@ -99,6 +101,7 @@ for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) 
       }
       (index.props[id] ??= []).push(item);
     } else {
+      if (statSync(full).size > floorMaxBytes) continue;
       const s = imageSize(headerOf(full));
       if (!s) continue;
       (index.floor[id] ??= []).push([url, s.width, s.height]);

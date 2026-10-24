@@ -10,7 +10,8 @@
 import { existsSync, openSync, readFileSync, readSync, closeSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { classify, compileMap, relFromFa, sizeFromName, imageSize } from './fa-match.js';
+import { PNG } from 'pngjs';
+import { alphaBox, classify, compileMap, relFromFa, sizeFromName, imageSize } from './fa-match.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -45,7 +46,8 @@ if (!dir || !existsSync(dir)) {
 
 const map = JSON.parse(readFileSync(join(root, 'src/tiles/fa-map.json'), 'utf8'));
 const compiled = compileMap(map);
-const index = { pxPerCell: map.pxPerCell, themes: map.themes, props: {}, floor: {} };
+const wall = Object.fromEntries(Object.entries(map.wall ?? {}).filter(([id]) => !id.startsWith('_')));
+const index = { pxPerCell: map.pxPerCell, themes: map.themes, wall, props: {}, floor: {} };
 
 console.log(`FA doorzoeken in ${dir} ...`);
 let files = 0;
@@ -61,7 +63,17 @@ for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) 
   for (const { kind, id } of hits) {
     if (kind === 'props') {
       const s = sizeFromName(entry.name);
-      (index.props[id] ??= []).push([url, s.w, s.h]);
+      const item = [url, s.w, s.h];
+      // Muur-props: ook waar de tekening in het vierkant staat (om ze tegen de muur te schuiven).
+      if (wall[id] && entry.name.toLowerCase().endsWith('.png')) {
+        try {
+          const box = alphaBox(PNG.sync.read(readFileSync(full)));
+          if (box) item.push(...box);
+        } catch {
+          /* onleesbare PNG: dan zonder kader */
+        }
+      }
+      (index.props[id] ??= []).push(item);
     } else {
       const s = imageSize(headerOf(full));
       if (!s) continue;

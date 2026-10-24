@@ -194,6 +194,9 @@ Daarna: `npm run fa-index` (zonder map) opnieuw als je `src/tiles/fa-map.json` a
   Past een afbeelding niet, dan zoekt de app een kleinere variant, draait ze een kwartslag, of schaalt ze in.
 - Per vakje kiest de app een **variant**, altijd dezelfde op dezelfde plek.
 - Vloeren worden FA-texturen, ook op hun echte grootte.
+- **Muur-props** (ladder, boekenkast, kast, haard, wapenrek): staat er een muur naast het vakje en
+  geeft de DM geen `rot`, dan draait de app de prop naar die muur en schuift ze ertegen. Welke props
+  dat zijn, staat onder `"wall"` in `src/tiles/fa-map.json`.
 - **Niet online zetten:** de afbeeldingen komen van je pc via de dev-server. Een build voor de
   Raspberry Pi volgt later.
 

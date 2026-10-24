@@ -60,9 +60,9 @@ export const FOG = {
   /** Kleur van de mist zelf. */
   color: '#15131b',
   /** Lichte wolken (midden van de vlek; naar de rand wordt het doorzichtig). */
-  cloudLight: 'rgba(150, 140, 185, 0.08)',
+  cloudLight: 'rgba(150, 140, 185, 0.05)',
   /** Donkere wolken. */
-  cloudDark: 'rgba(0, 0, 0, 0.45)',
+  cloudDark: 'rgba(0, 0, 0, 0.3)',
   /** Doorzichtigheid van de zachte buitenrand (0 = onzichtbaar, 1 = vol). */
   edgeOpacity: 0.55,
 };

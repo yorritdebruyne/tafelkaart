@@ -63,11 +63,20 @@ export interface PickOptions {
   noTurn?: boolean;
 }
 
-/** Kleine, vaste hash (FNV-1a) van een tekst -> getal. */
+/**
+ * Kleine, vaste hash van een tekst -> getal (FNV-1a + een eindmenging).
+ * De eindmenging zorgt dat "…|x" en "…|y" echt verschillende getallen geven;
+ * zonder die stap lagen wolkjes en versiering op een schuine lijn.
+ */
 export function hash(text: string): number {
   let h = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193) >>> 0;
-  return h;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
 }
 
 /** Hoe goed past een bestandsnaam bij het thema? Woorden tellen, "avoid" zwaar negatief. */

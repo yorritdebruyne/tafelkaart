@@ -45,7 +45,7 @@
     "boulder":   [{ "dir": "Woodlands/!Wilderness/Decor/Rocks/Boulders", "match": "^Boulder_" }, { "dir": "Mountain/!Wilderness/Decor/Rocks/Boulders", "match": "^Boulder_" }],
     "log":       [{ "dir": "Woodlands/!Wilderness/Flora/Trees/Logs", "match": "^Log" }],
     "reeds":     [{ "dir": "Woodlands/!Wilderness/Flora/Plants/Long_Grass", "match": "." }],
-    "flowers":   [{ "dir": "Woodlands/!Wilderness/Flora", "match": "^Flower" }, { "dir": "Feywilds/!Wilderness/Flora/Flowers", "match": "^Flower" }],
+    "flowers":   [{ "dir": "Woodlands/!Wilderness/Flora/Flowers", "match": "^Flowers?_", "exclude": "Black|Overlay|Butterfly" }],
     "stone-circle-stone": [{ "dir": "Mountain/!Wilderness/Decor/Rocks/Stones", "match": "." }],
     "campfire":  [{ "dir": "!Core_Settlements/Lightsources/Campfires_and_Firepits", "match": "^Campfire_" }],
     "sacks":     [{ "dir": "!Core_Settlements/Decor/Storage/Sacks", "match": "^Sack_", "exclude": "Open_Transparent" }],

@@ -13,7 +13,8 @@
 
 import { type Cell, cellInBounds, sameCell } from '../coords';
 import { S, svgEl } from '../render/svg';
-import { type Blockers, buildBlockers, canStep, isEnemyAt, landingIndex, smoothCorner, stepsBetween } from '../movement';
+import { buildAllBlockers } from '../blocking';
+import { type Blockers, canStep, isEnemyAt, landingIndex, smoothCorner, stepsBetween } from '../movement';
 import { extendPath } from '../rules';
 import { getPath, getToken, type MapState } from '../state';
 
@@ -101,7 +102,7 @@ export function attachDrag(host: DragHost): void {
       startY: e.clientY,
       moved: false,
       path: getPath(state, id),
-      blockers: buildBlockers(state.map),
+      blockers: buildAllBlockers(state.map),
       landing: 0,
     };
     drag.landing = drag.path.length - 1;

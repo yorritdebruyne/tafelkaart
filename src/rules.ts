@@ -32,8 +32,10 @@ export function isOverSpeed(token: TokenItem, used: number): boolean {
 }
 
 /** "Posities: Akmenos: E9, Amara: E7, T3: E8" — spelers eerst, daarna de rest. */
-export function positionsText(tokens: TokenItem[]): string {
+export function positionsText(tokens: TokenItem[], doorNotes: Record<string, string> = {}): string {
   const order = { player: 0, npc: 1, enemy: 2 } as const;
   const sorted = [...tokens].sort((a, b) => order[a.side] - order[b.side]);
-  return `Posities: ${sorted.map((t) => `${t.name}: ${formatCell(t.cell)}`).join(', ')}`;
+  const doors = Object.entries(doorNotes).map(([id, s]) => `deur ${id} ${s === 'open' ? 'open' : 'dicht'}`);
+  const extra = doors.length ? ` (${doors.join(', ')})` : '';
+  return `Posities: ${sorted.map((t) => `${t.name}: ${formatCell(t.cell)}`).join(', ')}${extra}`;
 }

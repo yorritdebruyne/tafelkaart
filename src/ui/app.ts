@@ -9,7 +9,7 @@ import { visibleTokens } from '../fog';
 import { applyPatch } from '../patch';
 import { isOverSpeed, pathLength, positionsText, squaresToMeters } from '../rules';
 import { parseJsonLenient, parseMapText } from '../schema';
-import { createState, getPath, getToken, moveToken, newTurn, type MapState } from '../state';
+import { createState, getPath, getToken, moveToken, newTurn, toggleDoor, type MapState } from '../state';
 import { TEST_MAP, TEST_PATCH, TEST_VILLAGE } from '../testmap';
 import { getSfeer, setSfeer, sfeerNames } from '../tiles';
 import { SIDE } from '../tiles/palette';
@@ -67,6 +67,24 @@ export class App {
       onCommit: (id, path) => this.commit(id, path),
       onTap: (id) => this.select(id),
       onCancel: () => this.redrawMoving(),
+    });
+
+    // Tik op een deur: open of dicht (niet op slot).
+    this.view.svg.addEventListener('click', (e) => {
+      const el = (e.target as Element).closest?.('[data-door]');
+      if (!el || !this.state) return;
+      const id = el.getAttribute('data-door')!;
+      const next = toggleDoor(this.state, id);
+      if (next === this.state) {
+        const d = this.state.map.doors.find((x) => x.id === id);
+        if (d?.state === 'locked') this.showToast('Deze deur is op slot. Alleen de DM kan ze openen.');
+        return;
+      }
+      this.state = next;
+      renderMap(this.view, this.state, this.selectedId);
+      this.renderStatus();
+      this.save();
+      this.showToast(`Deur ${id} ${next.doorNotes?.[id] === 'open' ? 'open' : 'dicht'}.`);
     });
 
     window.addEventListener('hashchange', () => this.loadFromHash());
@@ -239,7 +257,7 @@ export class App {
   private async copyPositions(): Promise<void> {
     if (!this.state) return this.showToast('Laad eerst een kaart.');
     // Wie in de mist staat, komt er niet in (anders verklapt de app iets).
-    const text = positionsText(visibleTokens(this.state.map));
+    const text = positionsText(visibleTokens(this.state.map), this.state.doorNotes);
     if (await copyText(text)) {
       this.showToast(`Gekopieerd: ${text}`);
     } else {

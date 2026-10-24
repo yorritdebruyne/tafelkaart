@@ -170,6 +170,8 @@ svg.map { display: block; margin: 0 auto; user-select: none; -webkit-user-select
 .door-gap { stroke: rgba(0, 0, 0, 0.45); stroke-width: 3; stroke-dasharray: 6 6; }
 .door-locked { stroke: #c62828; stroke-width: 4; }
 .door-keyhole { fill: #1a1a1a; }
+.door-hit { fill: transparent; cursor: pointer; }
+.door-hit.locked { cursor: not-allowed; }
 
 .move-path {
   fill: none;

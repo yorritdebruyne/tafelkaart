@@ -91,6 +91,7 @@ function renderFaDoor(g: SVGGElement, d: DoorItem, mapName: string): boolean {
     'data-door': d.id,
     transform: `translate(${cx} ${cy}) rotate(${horizontal ? 0 : 90})`,
   }, g);
+  doorHit(group, d, 0, 0, true);
   if (img.frame) {
     const fw = img.frame.w * S, fh = img.frame.h * S;
     svgEl('image', { href: img.frame.url, x: -fw / 2, y: -fh / 2, width: fw, height: fh, class: 'door-frame' }, group);
@@ -110,6 +111,16 @@ function renderFaDoor(g: SVGGElement, d: DoorItem, mapName: string): boolean {
   return true;
 }
 
+/** Onzichtbaar vlak over de rand om op te tikken (deur open/dicht). */
+function doorHit(group: SVGGElement, d: DoorItem, cx: number, cy: number, horizontal: boolean): void {
+  if (d.tile === 'window' || d.tile === 'arch') return;
+  svgEl('rect', {
+    x: cx - (horizontal ? S / 2 : S * 0.2), y: cy - (horizontal ? S * 0.2 : S / 2),
+    width: horizontal ? S : S * 0.4, height: horizontal ? S * 0.4 : S,
+    class: `door-hit${d.state === 'locked' ? ' locked' : ''}`,
+  }, group);
+}
+
 export function renderDoor(g: SVGGElement, d: DoorItem, mapName = ''): void {
   if (renderFaDoor(g, d, mapName)) return;
   const e = cellEdge(d.cell, d.side);
@@ -120,6 +131,7 @@ export function renderDoor(g: SVGGElement, d: DoorItem, mapName = ''): void {
   const thick = S * 0.2;
   const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
   const group = svgEl('g', { class: `door door-${d.state}`, 'data-door': d.id }, g);
+  doorHit(group, d, cx, cy, horizontal);
 
   // Rechthoek langs de rand (dichte deur, raam, ...).
   const along = (t: number, cls: string, fill: string) =>

@@ -26,6 +26,12 @@ export interface Blockers {
   closed: Set<string>;
   /** Randen met een open deur of een boog: altijd doorgang, ook als er een muur over loopt. */
   open: Set<string>;
+  /** Vakjes met een grote prop (zie blocking.ts): daar kan een token niet op. */
+  cells?: Set<string>;
+}
+
+export function cellKey(c: number, r: number): string {
+  return `${c},${r}`;
 }
 
 /** Sleutel van de rand tussen twee buurvakjes (orthogonaal). */
@@ -98,6 +104,11 @@ function blockOrthoFree(b: Blockers, from: Cell, to: Cell, size: number): boolea
 export function canStep(b: Blockers, from: Cell, to: Cell, size = 1): boolean {
   const dc = to.c - from.c, dr = to.r - from.r;
   if (chebyshev(from, to) !== 1) return false;
+  if (b.cells?.size) {
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) if (b.cells.has(cellKey(to.c + c, to.r + r))) return false;
+    }
+  }
   if (dc === 0 || dr === 0) return blockOrthoFree(b, from, to, size);
   const viaC: Cell = { c: to.c, r: from.r };
   const viaR: Cell = { c: from.c, r: to.r };

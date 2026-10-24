@@ -97,6 +97,7 @@ Klik in de app op **Laden → Testkaart (stal)** en controleer:
 - [ ] Sleep Akmenos tegen een muur of de dichte deur bij H7: hij stopt ervoor. Na de testpatch (deur open) mag hij erdoor.
 - [ ] Sleep Akmenos op Amara: hij blijft staan waar hij was. Sleep hem dóór Amara naar G9: dat mag.
 - [ ] Sleep Akmenos dóór een vijand (T1 of T2): hij stopt ervoor.
+- [ ] Sleep Akmenos één vakje schuin, ook een beetje slordig: de teller zegt 1, niet 2.
 
 Iets mis? Noteer wat je deed, wat je verwachtte en wat er gebeurde (screenshot helpt) en geef het aan Claude.
 

@@ -13,7 +13,7 @@
 
 import { type Cell, cellInBounds, sameCell } from '../coords';
 import { S, svgEl } from '../render/svg';
-import { type Blockers, buildBlockers, canStep, isEnemyAt, landingIndex, stepsBetween } from '../movement';
+import { type Blockers, buildBlockers, canStep, isEnemyAt, landingIndex, smoothCorner, stepsBetween } from '../movement';
 import { extendPath } from '../rules';
 import { getPath, getToken, type MapState } from '../state';
 
@@ -139,7 +139,7 @@ export function attachDrag(host: DragHost): void {
       for (const step of stepsBetween(last, cell)) {
         if (!canStep(drag.blockers, at, step, drag.size)) break;
         if (isEnemyAt(state.map, step, drag.size, drag.id)) break; // niet door een vijand
-        drag.path = extendPath(drag.path, step);
+        drag.path = smoothCorner(drag.blockers, extendPath(drag.path, step), drag.size);
         at = step;
       }
       drag.landing = landingIndex(state.map, drag.path, drag.size, drag.id);

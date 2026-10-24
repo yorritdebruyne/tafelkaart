@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { classify, compileMap, imageSize, relFromFa, sizeFromName } from './fa-match.js';
+import { classify, compileMap, imageSize, indexPaths, pickSome, pruneIndex, relFromFa, sizeFromName } from './fa-match.js';
 
 const map = JSON.parse(readFileSync(new URL('../src/tiles/fa-map.json', import.meta.url), 'utf8'));
 const c = compileMap(map);
@@ -48,5 +48,28 @@ describe('FA-koppeling', () => {
     // Minimale JPG: SOI, APP0 (lengte 4), SOF0 met hoogte 600 en breedte 1000.
     const jpg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0x00, 0x00, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x02, 0x58, 0x03, 0xe8, 0, 0, 0, 0, 0]);
     expect(imageSize(jpg)).toEqual({ width: 1000, height: 600 });
+  });
+
+  it('slanker: hoogstens k per grootte, elke sfeer krijgt zijn varianten', () => {
+    const themes = { standaard: { prefer: ['Ashen'], avoid: ['Broken'] }, verlaten: { prefer: ['Broken'], avoid: [] } };
+    const barrels = Array.from({ length: 20 }, (_, i) => [`b/Barrel_${i % 4 === 0 ? 'Broken_' : ''}Wood_${i % 3 ? 'Dark' : 'Ashen'}_A${i}_1x1.png`, 1, 1]);
+    const some = pickSome(barrels, (e) => e[0], themes, 6);
+    expect(some).toHaveLength(6);
+    expect(some.some((e) => /Broken/.test(e[0]))).toBe(true);
+    expect(some.some((e) => /Ashen/.test(e[0]) && !/Broken/.test(e[0]))).toBe(true);
+    expect(pickSome(barrels, (e) => e[0], themes, 6)).toEqual(some); // vast
+
+    const index = {
+      themes,
+      props: { barrel: [...barrels, ['b/Barrel_Big_A_2x2.png', 2, 2]] },
+      floor: { dirt: [['d/Dirt_A.jpg', 1000, 1000]] },
+      walls: { wood: { strips: [['w/Wall_Path.png', 1650, 200, 0, 0, 1, 1]], connectors: [] } },
+      doors: {},
+      decor: { dirt: Array.from({ length: 40 }, (_, i) => `l/Leaf_${i}_1x1.png`) },
+    };
+    pruneIndex(index);
+    expect(index.props.barrel).toHaveLength(7); // 6 van 1x1 + de enige 2x2
+    expect(index.decor.dirt).toHaveLength(24);
+    expect(indexPaths(index)).toHaveLength(7 + 1 + 1 + 24);
   });
 });

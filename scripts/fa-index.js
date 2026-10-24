@@ -6,21 +6,28 @@
 //
 // Resultaat: src/tiles/prive/fa-index.json (staat niet op GitHub).
 // Opnieuw draaien na het toevoegen van FA-delen of na een wijziging in src/tiles/fa-map.json.
+//
+// Standaard bewaart het script per soort en per grootte een handvol varianten (genoeg voor
+// afwisseling en voor elke sfeer). Alles houden:  npm run fa-index -- --alles
 
 import { existsSync, openSync, readFileSync, readSync, closeSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
-import { alphaBox, classify, compileMap, relFromFa, sizeFromName, imageSize } from './fa-match.js';
+import { alphaBox, classify, compileMap, indexPaths, pruneIndex, relFromFa, sizeFromName, imageSize } from './fa-match.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+const args = process.argv.slice(2);
+const keepAll = args.includes('--alles');
+const dirArg = args.find((a) => !a.startsWith('--'));
+
 function faDir() {
   const env = join(root, '.env.local');
-  if (process.argv[2]) {
+  if (dirArg) {
     // Eerste keer met een map erbij: onthoud ze in .env.local (ook de dev-server leest die).
-    if (!existsSync(env)) writeFileSync(env, `FA_DIR=${process.argv[2]}\n`);
-    return process.argv[2];
+    if (!existsSync(env)) writeFileSync(env, `FA_DIR=${dirArg}\n`);
+    return dirArg;
   }
   if (existsSync(env)) {
     const m = /^\s*FA_DIR\s*=\s*"?([^"\r\n]+)"?\s*$/m.exec(readFileSync(env, 'utf8'));
@@ -100,9 +107,11 @@ for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) 
   used++;
 }
 
+const found = indexPaths(index).length;
+if (!keepAll) pruneIndex(index);
 mkdirSync(join(root, 'src/tiles/prive'), { recursive: true });
 writeFileSync(join(root, 'src/tiles/prive/fa-index.json'), JSON.stringify(index));
-console.log(`${files} bestanden bekeken, ${used} gebruikt.`);
+console.log(`${files} bestanden bekeken, ${found} passen bij een tegel, ${indexPaths(index).length} bewaard${keepAll ? '' : ' (een handvol varianten per soort en grootte)'}.`);
 for (const kind of ['props', 'floor', 'walls', 'doors', 'decor']) {
   const ids = Object.keys(map[kind] ?? {}).filter((id) => !id.startsWith('_'));
   const missing = ids.filter((id) => !index[kind][id]);

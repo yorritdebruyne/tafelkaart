@@ -11,7 +11,8 @@
     "preview": "vite preview --host",
     "test": "vitest run",
     "test:watch": "vitest",
-    "fa-index": "node scripts/fa-index.js"
+    "fa-index": "node scripts/fa-index.js",
+    "fa-bundle": "npm run build && node scripts/fa-bundle.js"
   },
   "dependencies": {
     "zod": "^4.6.7"

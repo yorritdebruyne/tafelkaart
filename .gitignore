@@ -2,3 +2,6 @@ node_modules/
 dist/
 .DS_Store
 .idea/
+# Privétegels (bv. Forgotten Adventures, alleen persoonlijk gebruik): niet op GitHub.
+src/tiles/prive/*
+!src/tiles/prive/README.md

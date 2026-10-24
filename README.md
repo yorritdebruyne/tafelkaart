@@ -123,6 +123,7 @@ src/
     index.ts     tegel-lader: zoekt afbeeldingen in floor/ en props/
     floor/       vloer-afbeeldingen (<id>.svg of .png)
     props/       prop-afbeeldingen (<id>.svg of .png)
+    prive/       tegels die niet op GitHub mogen (staat in .gitignore)
   ui/
     app.ts       knoppen, laden, status, zoom, thema
     drag.ts      slepen met muis en touch (pointer events)
@@ -166,8 +167,9 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
   twee muren door. Niet door een zichtbare vijand. Niet eindigen op een ander zichtbaar token;
   door een bondgenoot of npc lopen mag. De DM kan via een
   patch altijd alles verzetten.
-- Tegel-lader: afbeelding in `src/tiles/floor/` of `src/tiles/props/` → die wordt gebruikt,
-  anders een reserve-tekening.
+- Tegel-lader: afbeelding in `src/tiles/prive/…` (niet op GitHub), dan `src/tiles/floor/` of
+  `src/tiles/props/` → die wordt gebruikt, anders een reserve-tekening. Afbeeldingen worden apart
+  geladen, dus grote PNG's maken de app niet traag.
 - `terrain` en `lights` worden al aanvaard maar pas in M3 getekend (info-melding).
 
 ## 6. Goed om te weten

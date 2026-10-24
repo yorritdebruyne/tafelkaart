@@ -67,7 +67,7 @@ describe('render', () => {
     expect(props[0].getAttribute('transform')).toBe('translate(64 32) rotate(0)');
     expect(props[0].querySelector('text')?.textContent).toBe('hay');
     // crate: er staat een voorbeeld-afbeelding in src/tiles/props/
-    expect(props[1].querySelector('image')?.getAttribute('href')).toMatch(/^data:image\/svg/);
+    expect(props[1].querySelector('image')?.getAttribute('href')).toBeTruthy();
     // bed van 1×2 vakjes, kwartslag gedraaid: getekend als 2×1 vóór het draaien
     const bedRect = props[2].querySelector('rect.prop-placeholder')!;
     expect(Number(bedRect.getAttribute('width'))).toBeGreaterThan(Number(bedRect.getAttribute('height')));

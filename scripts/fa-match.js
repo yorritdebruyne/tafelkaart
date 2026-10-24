@@ -22,7 +22,7 @@ export function sizeFromName(name) {
 export function compileMap(map) {
   const deny = new RegExp(map.deny, 'i');
   const rules = [];
-  for (const kind of ['props', 'floor', 'walls']) {
+  for (const kind of ['props', 'floor', 'walls', 'doors', 'decor']) {
     for (const [id, list] of Object.entries(map[kind] ?? {})) {
       if (id.startsWith('_')) continue;
       for (const r of list) {
@@ -33,7 +33,8 @@ export function compileMap(map) {
           exclude: r.exclude ? new RegExp(r.exclude, 'i') : null,
           ext: r.ext ? r.ext.toLowerCase() : null,
         };
-        rules.push({ ...base, match: new RegExp(r.match, 'i'), part: kind === 'walls' ? 'strip' : undefined });
+        const part = kind === 'walls' ? 'strip' : kind === 'doors' ? (r.part ?? 'door') : undefined;
+        rules.push({ ...base, match: new RegExp(r.match, 'i'), part });
         if (r.connector) rules.push({ ...base, match: new RegExp(r.connector, 'i'), part: 'connector' });
       }
     }
@@ -58,7 +59,7 @@ export function classify(compiled, rel) {
     if (!(dir === r.dir || dir.startsWith(r.dir + '/'))) continue;
     if (inPaths && r.kind !== 'walls') continue; // "Paths"-mappen: alleen voor muren
     if (!r.match.test(file) || (r.exclude && r.exclude.test(file))) continue;
-    if (r.kind === 'props' && !sizeFromName(file)) continue;
+    if ((r.kind === 'props' || r.kind === 'decor') && !sizeFromName(file)) continue;
     if (r.kind !== 'props' && !['jpg', 'jpeg', 'png', 'webp'].includes(ext)) continue;
     if (r.ext && ext !== r.ext) continue;
     if (!out.some((o) => o.kind === r.kind && o.id === r.id && o.part === r.part)) {

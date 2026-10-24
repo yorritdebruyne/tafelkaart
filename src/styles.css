@@ -16,7 +16,7 @@
   --danger: #b3261e;
   --warning: #8a5a00;
   --map-empty: #d4cdc1;
-  --grid: rgba(0, 0, 0, 0.22);
+  --grid: rgba(0, 0, 0, 0.16);
   --label: #6b645b;
   --target: rgba(47, 111, 189, 0.25);
 }
@@ -35,7 +35,7 @@
     --danger: #ff8a80;
     --warning: #f2c46b;
     --map-empty: #2b2825;
-    --grid: rgba(0, 0, 0, 0.35);
+    --grid: rgba(0, 0, 0, 0.26);
     --label: #a49b8f;
     --target: rgba(77, 143, 224, 0.3);
   }
@@ -54,7 +54,7 @@
   --danger: #ff8a80;
   --warning: #f2c46b;
   --map-empty: #2b2825;
-  --grid: rgba(0, 0, 0, 0.35);
+  --grid: rgba(0, 0, 0, 0.26);
   --label: #a49b8f;
   --target: rgba(77, 143, 224, 0.3);
 }
@@ -150,7 +150,7 @@ svg.map { display: block; margin: 0 auto; user-select: none; -webkit-user-select
   font-family: ui-monospace, Consolas, monospace;
 }
 
-.layer-props, .layer-fog { pointer-events: none; }
+.layer-props, .layer-fog, .layer-decor { pointer-events: none; }
 .prop-placeholder { stroke: rgba(0, 0, 0, 0.55); stroke-width: 2; opacity: 0.92; }
 .prop-placeholder.unknown { stroke-dasharray: 5 4; }
 .prop-top { fill: rgba(255, 255, 255, 0.85); }
@@ -181,7 +181,9 @@ svg.map { display: block; margin: 0 auto; user-select: none; -webkit-user-select
 }
 .move-start { opacity: 0.7; }
 
-.token-body { stroke: #fff; stroke-width: 3; }
+.token-body { stroke-width: 7; }
+.token-shadow { fill: rgba(0, 0, 0, 0.4); }
+.token-outline { fill: none; stroke: rgba(0, 0, 0, 0.7); stroke-width: 2; }
 .token-label {
   fill: #fff;
   font-weight: 700;
@@ -194,8 +196,8 @@ svg.map { display: block; margin: 0 auto; user-select: none; -webkit-user-select
 }
 .token.draggable { cursor: grab; touch-action: none; }
 .token.dragging { cursor: grabbing; opacity: 0.85; }
-.token.selected .token-body { stroke: #ffd54a; stroke-width: 5; }
-.token.over .token-body { stroke: #ff3b30; stroke-width: 5; stroke-dasharray: 8 5; }
+.token.selected .token-body { stroke: #ffd54a; stroke-width: 7; }
+.token.over .token-body { stroke: #ff3b30; stroke-width: 7; stroke-dasharray: 8 5; }
 
 .badge rect { fill: rgba(20, 20, 20, 0.8); }
 .badge text {

@@ -4,12 +4,13 @@
 // tegel-id een lijst afbeeldingen. Hier kiezen we er één, in drie stappen:
 //   1. Grootte: een afbeelding die in de vakjes van de prop past, zo groot mogelijk.
 //      Een 2×1-afbeelding mag ook een kwartslag draaien om in 1×2 vakjes te passen.
-//      Past niets, dan nemen we de kleinste en schalen we die in.
+//      Past niets, dan nemen we de kleinste en tekenen we die op echte grootte
+//      (groter dan de vakjes van de DM; de tekening zelf beslist hoe groot een trog is).
 //   2. Thema: woorden in de bestandsnaam (bv. "Broken" voor een verlaten dorp).
 //   3. Dobbelsteen: uit wat overblijft kiezen we met een vaste "dobbelsteen" op
 //      de plek op de kaart, zodat elk vakje er bij elke herlading hetzelfde uitziet.
 
-export interface Theme { prefer: string[]; avoid: string[]; }
+export interface Theme { prefer: string[]; avoid: string[]; /** Deel van de vakjes met versiering (0..1). */ decor?: number; }
 /** [pad, breedte in vakjes, hoogte in vakjes, en voor muur-props: kader x1, y1, x2, y2 (0..1)] */
 export type PropEntry = [string, number, number, ...number[]];
 
@@ -23,7 +24,13 @@ export interface FaIndex {
   floor: Record<string, [string, number, number][]>;
   /** Muren: stroken en hoekstukken, elk [pad, breedte px, hoogte px, kader x1, y1, x2, y2 (0..1)]. */
   walls?: Record<string, { strips: WallEntry[]; connectors: WallEntry[] }>;
+  doors?: Record<string, DoorSet>;
+  /** Kleine versiering per vloertype: paden van 1×1-afbeeldingen. */
+  decor?: Record<string, string[]>;
 }
+
+/** Deuren: bladen en kozijnen, elk [pad, breedte in vakjes, hoogte in vakjes]. */
+export type DoorSet = { doors: [string, number, number][]; frames: [string, number, number][] };
 
 export type WallEntry = [string, number, number, number, number, number, number];
 
@@ -40,8 +47,10 @@ export interface PropPick {
   h: number;
   /** true = afbeelding een kwartslag draaien om te passen. */
   turn: boolean;
-  /** < 1 als de afbeelding groter is dan de vakjes en ingeschaald wordt. */
+  /** Altijd 1 (echte grootte); blijft bestaan voor eigen afbeeldingen. */
   scale: number;
+  /** true = groter dan de vakjes van de DM (wordt uitgelijnd op het raster getekend). */
+  overflow: boolean;
   /** Waar de tekening in de afbeelding staat (0..1), als bekend. */
   box?: [number, number, number, number];
 }
@@ -109,12 +118,12 @@ export function pickProp(
     // Zo groot mogelijk; liever niet gedraaid.
     pool = best(best(fits, (o) => o.w * o.h), (o) => (o.turn ? 0 : 1));
   } else {
-    // Niets past: zo weinig mogelijk inschalen.
+    // Niets past: de kleinste (zo weinig mogelijk buiten de vakjes).
     pool = best(best(options, (o) => -Math.max(o.w / lw, o.h / lh)), (o) => (o.turn ? 0 : 1));
   }
   pool = best(pool, (o) => themeScore(o.path, theme));
   const pick = pool[hash(seed) % pool.length];
-  return { ...pick, scale: Math.min(1, lw / pick.w, lh / pick.h) };
+  return { ...pick, scale: 1, overflow: !fits.length };
 }
 
 /** Strook + passend hoekstuk voor een muurtype (één keuze per kaart en per type). */
@@ -130,6 +139,22 @@ export function pickWall(
   const base = name.replace(/_Straight_Path\.png$|_Path\.png$/i, '');
   const connector = set.connectors.find(([p]) => p.slice(p.lastIndexOf('/') + 1).startsWith(`${base}_Connector`));
   return { strip, connector };
+}
+
+/** Deurblad (per deur) en kozijn (één per kaart en per soort). */
+export function pickDoor(
+  set: DoorSet | undefined,
+  seed: string,
+  frameSeed: string,
+  theme?: Theme,
+): { door: [string, number, number]; frame?: [string, number, number] } | undefined {
+  if (!set?.doors.length) return undefined;
+  const doors = best(set.doors, ([p]) => themeScore(p, theme));
+  const frames = best(set.frames, ([p]) => themeScore(p, theme));
+  return {
+    door: doors[hash(seed) % doors.length],
+    frame: frames.length ? frames[hash(frameSeed) % frames.length] : undefined,
+  };
 }
 
 export function pickFloor(

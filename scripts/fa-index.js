@@ -47,7 +47,7 @@ if (!dir || !existsSync(dir)) {
 const map = JSON.parse(readFileSync(join(root, 'src/tiles/fa-map.json'), 'utf8'));
 const compiled = compileMap(map);
 const wall = Object.fromEntries(Object.entries(map.wall ?? {}).filter(([id]) => !id.startsWith('_')));
-const index = { pxPerCell: map.pxPerCell, themes: map.themes, wall, props: {}, floor: {}, walls: {} };
+const index = { pxPerCell: map.pxPerCell, themes: map.themes, wall, props: {}, floor: {}, walls: {}, doors: {}, decor: {} };
 
 console.log(`FA doorzoeken in ${dir} ...`);
 let files = 0;
@@ -61,7 +61,13 @@ for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) 
   const hits = classify(compiled, relFromFa(url));
   if (!hits.length) continue;
   for (const { kind, id, part } of hits) {
-    if (kind === 'walls') {
+    if (kind === 'decor') {
+      (index.decor[id] ??= []).push(url);
+    } else if (kind === 'doors') {
+      const s = sizeFromName(entry.name) ?? { w: 1, h: 1 };
+      const d = (index.doors[id] ??= { doors: [], frames: [] });
+      (part === 'frame' ? d.frames : d.doors).push([url, s.w, s.h]);
+    } else if (kind === 'walls') {
       // Strook of hoekstuk: afmetingen + waar de muur in de afbeelding staat.
       try {
         const png = PNG.sync.read(readFileSync(full));
@@ -97,7 +103,7 @@ for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) 
 mkdirSync(join(root, 'src/tiles/prive'), { recursive: true });
 writeFileSync(join(root, 'src/tiles/prive/fa-index.json'), JSON.stringify(index));
 console.log(`${files} bestanden bekeken, ${used} gebruikt.`);
-for (const kind of ['props', 'floor', 'walls']) {
+for (const kind of ['props', 'floor', 'walls', 'doors', 'decor']) {
   const ids = Object.keys(map[kind] ?? {}).filter((id) => !id.startsWith('_'));
   const missing = ids.filter((id) => !index[kind][id]);
   console.log(`${kind}: ${ids.length - missing.length}/${ids.length} tegels gevonden${missing.length ? ` (niet: ${missing.join(', ')})` : ''}`);

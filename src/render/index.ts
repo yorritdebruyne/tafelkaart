@@ -8,12 +8,14 @@ import { renderFloor } from './floor';
 import { renderFog } from './fog';
 import { renderGrid, renderLabels } from './grid';
 import { renderProps } from './props';
+import { SHADOW, TOKEN } from '../tiles/palette';
+import { renderDecor } from './decor';
 import { S, svgEl } from './svg';
 import { renderPaths, renderTokens } from './tokens';
 import { renderWalls } from './walls';
 
 export const LAYERS = [
-  'labels', 'floor', 'grid', 'terrain', 'props', 'walls', 'light', 'path', 'tokens', 'fog', 'players', 'overlay',
+  'labels', 'floor', 'decor', 'grid', 'terrain', 'props', 'walls', 'light', 'path', 'tokens', 'fog', 'players', 'overlay',
 ] as const;
 export type LayerName = (typeof LAYERS)[number];
 
@@ -29,8 +31,24 @@ export interface MapView {
 
 export function createMapView(): MapView {
   const svg = svgEl('svg', { class: 'map', role: 'img', 'aria-label': 'Kaart' });
+  // Gedeelde definities: schaduw (filter) en de binnenkant van tokens (kleurverloop).
+  const defs = svgEl('defs', {}, svg);
+  const shadow = svgEl('filter', { id: 'shadow', x: '-20%', y: '-20%', width: '140%', height: '140%' }, defs);
+  svgEl('feDropShadow', {
+    dx: SHADOW.dx * S, dy: SHADOW.dy * S, stdDeviation: SHADOW.blur * S,
+    'flood-color': '#000', 'flood-opacity': SHADOW.opacity,
+  }, shadow);
+  const grad = svgEl('radialGradient', { id: 'token-fill', cx: '40%', cy: '35%', r: '70%' }, defs);
+  svgEl('stop', { offset: '0%', 'stop-color': TOKEN.innerLight }, grad);
+  svgEl('stop', { offset: '100%', 'stop-color': TOKEN.inner }, grad);
+
   const layers = {} as Record<LayerName, SVGGElement>;
   for (const name of LAYERS) layers[name] = svgEl('g', { class: `layer layer-${name}` }, svg);
+  if (SHADOW.on) {
+    // Eén filter per laag (niet per prop): goedkoper om te tekenen.
+    layers.props.setAttribute('filter', 'url(#shadow)');
+    layers.walls.setAttribute('filter', 'url(#shadow)');
+  }
   return { svg, layers, tokenEls: new Map() };
 }
 
@@ -49,6 +67,7 @@ export function renderMap(view: MapView, state: MapState, selectedId: string | n
   view.svg.setAttribute('viewBox', `${-GUTTER} ${-GUTTER} ${width} ${height}`);
   renderLabels(view.layers.labels, map, GUTTER);
   renderFloor(view.layers.floor, map);
+  renderDecor(view.layers.decor, map);
   renderGrid(view.layers.grid, map);
   renderProps(view.layers.props, map);
   renderWalls(view.layers.walls, map);

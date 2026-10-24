@@ -68,6 +68,9 @@ Terwijl `dev` draait: sla je een bestand op, dan herlaadt de browser vanzelf.
 
 ## 3. Testlijst
 
+Er zijn twee testkaarten: **Testkaart (stal)** en **Testkaart (dorp)** (een algemeen dorp met huizen,
+herberg, plein en moestuin, om stijlen en sferen te vergelijken).
+
 Klik in de app op **Laden → Testkaart (stal)** en controleer:
 
 - [ ] De stal staat er: aarde binnen, kasseien onder, houten muren, deur bij H7.
@@ -194,6 +197,15 @@ Daarna: `npm run fa-index` (zonder map) opnieuw als je `src/tiles/fa-map.json` a
   Past een afbeelding niet, dan zoekt de app een kleinere variant, draait ze een kwartslag, of schaalt ze in.
 - Per vakje kiest de app een **variant**, altijd dezelfde op dezelfde plek.
 - Vloeren worden FA-texturen, ook op hun echte grootte.
+- **Groter dan het vakje van de DM?** Dan tekent de app de prop toch op echte grootte, vanaf dat
+  vakje naar rechts en onder (een trog van 2×1 op C7 ligt op C7:D7). Bij 2 of meer vakjes teveel komt de
+  helft links/boven (een boom van 3×3 op C3 ligt op B2:D4).
+- **Deuren, poorten en ramen** komen ook uit FA, met een kozijn over de muur. Een open deur draait naar
+  het vakje toe.
+- **Versiering:** op natuurlijke vloeren strooit de app zelf takjes, blaadjes, onkruid en steentjes.
+  Hoeveel hangt af van de sfeer (veel bij "verlaten", weinig bij "rijk"). Niet op vakjes met een prop.
+- **Schaduw** onder props, muren en deuren. Voelt slepen traag op een oude telefoon? Zet
+  `SHADOW.on` op `false` in `src/tiles/palette.ts`.
 - **Muur-props** (ladder, boekenkast, kast, haard, wapenrek): staat er een muur naast het vakje en
   geeft de DM geen `rot`, dan draait de app de prop naar die muur en schuift ze ertegen. Welke props
   dat zijn, staat onder `"wall"` in `src/tiles/fa-map.json`.

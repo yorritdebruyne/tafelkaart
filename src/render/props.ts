@@ -73,14 +73,25 @@ function renderProp(g: SVGGElement, p: PropItem, blockers: Blockers): void {
     const target = img.turn ? svgEl('g', { transform: 'rotate(90)' }, el) : el;
     const dw = img.turn ? ih : iw;
     const dh = img.turn ? iw : ih;
+    // Groter dan de vakjes van de DM: op echte grootte, uitgelijnd op het raster.
+    // Het teveel gaat zoveel mogelijk naar rechts en onder (zoals bij tokens: het vakje
+    // is de linkerbovenhoek); bij 2 of meer vakjes teveel komt de helft links/boven.
+    // Een trog van 2×1 op C7 ligt zo op C7:D7, een boom van 3×3 op C3 op B2:D4.
+    let x = -dw / 2;
+    let y = -dh / 2;
+    if (img.overflow) {
+      const lwT = img.turn ? lh : lw; // rechthoek in de assen van de (gedraaide) afbeelding
+      const lhT = img.turn ? lw : lh;
+      if (dw > lwT) x = -lwT / 2 - Math.floor(Math.round((dw - lwT) / S) / 2) * S;
+      if (dh > lhT) y = -lhT / 2 - Math.floor(Math.round((dh - lhT) / S) / 2) * S;
+    }
     // Tegen de muur: schuif tot de bovenkant van de tekening tegen de muurlijn ligt.
-    let dy = 0;
     if (toWall !== null && !img.turn) {
-      const top = -dh / 2 + (img.box ? img.box[1] : 0) * dh;
-      dy = -lh / 2 + WALL_GAP - top;
+      const top = y + (img.box ? img.box[1] : 0) * dh;
+      y += -lh / 2 + WALL_GAP - top;
     }
     svgEl('image', {
-      href: img.url, x: -dw / 2, y: -dh / 2 + dy, width: dw, height: dh, preserveAspectRatio: 'xMidYMid meet',
+      href: img.url, x, y, width: dw, height: dh, preserveAspectRatio: 'xMidYMid meet',
     }, target);
     return;
   }

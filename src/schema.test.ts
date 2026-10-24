@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseMapObject, parseMapText } from './schema';
-import { TEST_MAP } from './testmap';
+import { TEST_MAP, TEST_VILLAGE } from './testmap';
 
 const base = { type: 'map', version: 1, name: 'Test', cols: 10, rows: 10 };
 
@@ -28,6 +28,13 @@ describe('schema', () => {
       'regions[2].id: "a" bestaat al, regio overgeslagen',
       'regions[3].id: ontbreekt',
     ]);
+  });
+
+  it('de testkaart (dorp) laadt zonder fouten of waarschuwingen', () => {
+    const res = parseMapText(TEST_VILLAGE);
+    expect(res.errors).toEqual([]);
+    expect(res.warnings).toEqual([]);
+    expect(res.map?.props.length).toBeGreaterThan(30);
   });
 
   it('JSON met tekst errond (```json uit de chat) werkt ook', () => {

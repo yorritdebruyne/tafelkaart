@@ -1,6 +1,6 @@
 import { cellEdge } from '../coords';
 import type { DoorItem, MapData, WallItem } from '../schema';
-import { type WallImage, wallImage } from '../tiles';
+import { doorImage, type WallImage, wallImage } from '../tiles';
 import { DOOR, UNKNOWN, WALL } from '../tiles/palette';
 import { S, svgEl } from './svg';
 
@@ -45,7 +45,7 @@ export function renderWalls(g: SVGGElement, map: MapData): void {
       }, g);
     }
   }
-  for (const d of map.doors) renderDoor(g, d);
+  for (const d of map.doors) renderDoor(g, d, map.name);
 }
 
 function renderTexturedWall(g: SVGGElement, w: WallItem, img: WallImage, pattern: string): void {
@@ -73,7 +73,45 @@ function renderTexturedWall(g: SVGGElement, w: WallItem, img: WallImage, pattern
   }
 }
 
-export function renderDoor(g: SVGGElement, d: DoorItem): void {
+/**
+ * Deur met een FA-afbeelding: kozijn over de muur, blad op de rand.
+ * Lokaal assenstelsel: de rand loopt van x = -S/2 tot S/2 op y = 0; +y wijst naar het
+ * vakje van de deur. Een open deur draait een kwartslag om het scharnier links (x = -S/2).
+ */
+function renderFaDoor(g: SVGGElement, d: DoorItem, mapName: string): boolean {
+  const img = doorImage(d.tile, `${mapName}|door|${d.id}`, `${mapName}|frame|${d.tile}`);
+  if (!img) return false;
+  const e = cellEdge(d.cell, d.side);
+  const horizontal = e.y1 === e.y2;
+  const cx = ((e.x1 + e.x2) / 2) * S;
+  const cy = ((e.y1 + e.y2) / 2) * S;
+  const inward = horizontal ? e.ny : -e.nx; // richting van het vakje, in lokale y
+  const group = svgEl('g', {
+    class: `door door-${d.state} door-fa`,
+    'data-door': d.id,
+    transform: `translate(${cx} ${cy}) rotate(${horizontal ? 0 : 90})`,
+  }, g);
+  if (img.frame) {
+    const fw = img.frame.w * S, fh = img.frame.h * S;
+    svgEl('image', { href: img.frame.url, x: -fw / 2, y: -fh / 2, width: fw, height: fh, class: 'door-frame' }, group);
+  }
+  // Blad: zo breed als de rand (een poort van 2×1 wordt dus ingeschaald).
+  const scale = Math.min(1, 1 / img.door.w);
+  const dw = img.door.w * S * scale, dh = img.door.h * S * scale;
+  const leaf = svgEl('g', d.state === 'open' && d.tile !== 'window'
+    ? { transform: `rotate(${inward >= 0 ? 90 : -90} ${-S / 2} 0)` }
+    : {}, group);
+  svgEl('image', { href: img.door.url, x: -dw / 2, y: -dh / 2, width: dw, height: dh, class: 'door-leaf-img' }, leaf);
+  if (d.state === 'locked') {
+    // Op slot: dunne rode rand en een sleutelgat.
+    svgEl('rect', { x: -S * 0.43, y: -S * 0.1, width: S * 0.86, height: S * 0.2, rx: 3, class: 'door-locked' }, group);
+    svgEl('circle', { cx: 0, cy: 0, r: S * 0.055, class: 'door-keyhole' }, group);
+  }
+  return true;
+}
+
+export function renderDoor(g: SVGGElement, d: DoorItem, mapName = ''): void {
+  if (renderFaDoor(g, d, mapName)) return;
   const e = cellEdge(d.cell, d.side);
   const color = DOOR[d.tile] ?? UNKNOWN;
   const x1 = e.x1 * S, y1 = e.y1 * S, x2 = e.x2 * S, y2 = e.y2 * S;

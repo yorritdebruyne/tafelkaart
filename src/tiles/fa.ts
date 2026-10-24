@@ -10,7 +10,17 @@
 //   3. Dobbelsteen: uit wat overblijft kiezen we met een vaste "dobbelsteen" op
 //      de plek op de kaart, zodat elk vakje er bij elke herlading hetzelfde uitziet.
 
-export interface Theme { prefer: string[]; avoid: string[]; /** Deel van de vakjes met versiering (0..1). */ decor?: number; }
+export interface Theme {
+  prefer: string[];
+  avoid: string[];
+  /** Deel van de vakjes met versiering (0..1). */
+  decor?: number;
+  /**
+   * Vloerfamilie per vloer-id (regex op de bestandsnaam), bv. "dirt": "^Cracked_Dirt_".
+   * Nodig omdat FA-vloeren geen sfeerwoorden in hun naam hebben ("Dirt_A_01.jpg").
+   */
+  floors?: Record<string, string>;
+}
 /** [pad, breedte in vakjes, hoogte in vakjes, en voor muur-props: kader x1, y1, x2, y2 (0..1)] */
 export type PropEntry = [string, number, number, ...number[]];
 
@@ -166,13 +176,28 @@ export function pickDoor(
   };
 }
 
+const familyCache = new Map<string, RegExp>();
+
+/** Hoe goed past een vloerbestand bij de sfeer? De vloerfamilie weegt het zwaarst. */
+export function floorScore(path: string, theme: Theme | undefined, id?: string): number {
+  const fam = id ? theme?.floors?.[id] : undefined;
+  let s = themeScore(path, theme);
+  if (fam) {
+    let re = familyCache.get(fam);
+    if (!re) familyCache.set(fam, (re = new RegExp(fam, 'i')));
+    if (re.test(path.slice(path.lastIndexOf('/') + 1))) s += 100;
+  }
+  return s;
+}
+
 export function pickFloor(
   cands: [string, number, number][] | undefined,
   seed: string,
   theme?: Theme,
+  id?: string,
 ): { path: string; px: number; py: number } | undefined {
   if (!cands?.length) return undefined;
-  const pool = best(cands, ([path]) => themeScore(path, theme));
+  const pool = best(cands, ([path]) => floorScore(path, theme, id));
   const [path, px, py] = pool[hash(seed) % pool.length];
   return { path, px, py };
 }

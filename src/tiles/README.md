@@ -42,6 +42,9 @@ Wil je één bepaalde FA-ton altijd gebruiken? Kopieer hem als `prive/props/barr
 Je mag dit bestand aanpassen of uitbreiden; draai daarna opnieuw `npm run fa-index`.
 De sferen (standaard, rijk, verlaten) staan er ook: woorden in de bestandsnaam die de app
 liever wel (`prefer`) of liever niet (`avoid`) kiest. Een nieuwe sfeer toevoegen mag.
+FA-vloeren hebben geen sfeerwoorden in hun naam (`Dirt_A_01.jpg`), daarom zegt `floors` per sfeer
+welke vloerfamilie hoort bij elke vloer-id, bv. `"dirt": "^Cracked_Dirt_"` voor "verlaten".
+Vloertexturen zwaarder dan `floorMaxKB` (2 MB) worden overgeslagen, zodat de bundel licht blijft.
 Paddenstoelen, schimmel, ratten en dergelijke worden altijd uitgesloten (`deny`).
 
 ## Regels

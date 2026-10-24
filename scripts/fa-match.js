@@ -140,13 +140,23 @@ function themeScoreOf(path, theme) {
   return s;
 }
 
-/** Kies hoogstens `k` items: per sfeer de `perTheme` beste, dan aanvullen in vaste volgorde. */
-export function pickSome(items, pathOf, themes, k, perTheme = 2) {
+/** Zoals floorScore in src/tiles/fa.ts: de vloerfamilie van de sfeer weegt het zwaarst. */
+export function floorScoreOf(path, theme, id) {
+  const fam = theme.floors?.[id];
+  const file = path.slice(path.lastIndexOf('/') + 1);
+  return themeScoreOf(path, theme) + (fam && new RegExp(fam, 'i').test(file) ? 100 : 0);
+}
+
+/**
+ * Kies hoogstens `k` items: per sfeer de `perTheme` beste, dan aanvullen in vaste volgorde.
+ * `score(pad, sfeer)` zegt hoe goed een item bij een sfeer past (standaard: woorden in de naam).
+ */
+export function pickSome(items, pathOf, themes, k, perTheme = 2, score = themeScoreOf) {
   if (items.length <= k) return items;
   const byHash = [...items].sort((a, b) => hashStr(pathOf(a)) - hashStr(pathOf(b)));
   const chosen = new Set();
   for (const theme of Object.values(themes)) {
-    const ranked = [...byHash].sort((a, b) => themeScoreOf(pathOf(b), theme) - themeScoreOf(pathOf(a), theme));
+    const ranked = [...byHash].sort((a, b) => score(pathOf(b), theme) - score(pathOf(a), theme));
     let n = 0;
     for (const it of ranked) {
       if (n >= perTheme || chosen.size >= k) break;
@@ -161,7 +171,7 @@ export function pickSome(items, pathOf, themes, k, perTheme = 2) {
 }
 
 /** Het hele index slanker maken (props per grootte, vloeren, deuren, versiering). */
-export function pruneIndex(index, limits = { props: 6, floor: 4, doors: 6, decor: 24 }) {
+export function pruneIndex(index, limits = { props: 6, floor: 9, doors: 6, decor: 24 }) {
   const themes = index.themes ?? {};
   const path = (e) => e[0];
   for (const [id, list] of Object.entries(index.props)) {
@@ -173,7 +183,10 @@ export function pruneIndex(index, limits = { props: 6, floor: 4, doors: 6, decor
     }
     index.props[id] = [...bySize.values()].flatMap((g) => pickSome(g, path, themes, limits.props));
   }
-  for (const [id, list] of Object.entries(index.floor)) index.floor[id] = pickSome(list, path, themes, limits.floor);
+  // Vloeren: per sfeer 3 uit de eigen familie (bv. gebarsten aarde voor "verlaten").
+  for (const [id, list] of Object.entries(index.floor)) {
+    index.floor[id] = pickSome(list, path, themes, limits.floor, 3, (p, theme) => floorScoreOf(p, theme, id));
+  }
   for (const d of Object.values(index.doors ?? {})) d.doors = pickSome(d.doors, path, themes, limits.doors);
   for (const [id, list] of Object.entries(index.decor ?? {})) index.decor[id] = pickSome(list, (p) => p, themes, limits.decor, 0);
   return index;

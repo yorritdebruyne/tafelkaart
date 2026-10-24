@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { classify, compileMap, imageSize, indexPaths, pickSome, pruneIndex, relFromFa, sizeFromName } from './fa-match.js';
+import { classify, compileMap, floorScoreOf, imageSize, indexPaths, pickSome, pruneIndex, relFromFa, sizeFromName } from './fa-match.js';
 
 const map = JSON.parse(readFileSync(new URL('../src/tiles/fa-map.json', import.meta.url), 'utf8'));
 const c = compileMap(map);
@@ -71,5 +71,35 @@ describe('FA-koppeling', () => {
     expect(index.props.barrel).toHaveLength(7); // 6 van 1x1 + de enige 2x2
     expect(index.decor.dirt).toHaveLength(24);
     expect(indexPaths(index)).toHaveLength(7 + 1 + 1 + 24);
+  });
+
+  it('vloeren: per sfeer 3 uit de eigen familie bewaren', () => {
+    const themes = {
+      standaard: { prefer: [], avoid: [], floors: { dirt: '^Rocky_Dirt_' } },
+      rijk: { prefer: [], avoid: [], floors: { dirt: '^Dirt_' } },
+      verlaten: { prefer: [], avoid: [], floors: { dirt: '^Cracked_Dirt_' } },
+    };
+    const files = ['Dirt', 'Rocky_Dirt', 'Cracked_Dirt'].flatMap((f) =>
+      Array.from({ length: 8 }, (_, i) => [`d/${f}_A_0${i}.jpg`, 1000, 1000]));
+    const index = { themes, props: {}, floor: { dirt: files }, doors: {}, decor: {} };
+    pruneIndex(index);
+    const kept = index.floor.dirt.map((e) => e[0]);
+    expect(kept).toHaveLength(9);
+    expect(kept.filter((p) => p.startsWith('d/Dirt_'))).toHaveLength(3);
+    expect(kept.filter((p) => p.startsWith('d/Rocky_'))).toHaveLength(3);
+    expect(kept.filter((p) => p.startsWith('d/Cracked_'))).toHaveLength(3);
+    expect(floorScoreOf('d/Cracked_Dirt_A_01.jpg', themes.verlaten, 'dirt')).toBe(100);
+  });
+
+  it('vloerregels in fa-map.json: families komen in de index', () => {
+    const map = JSON.parse(readFileSync(new URL('../src/tiles/fa-map.json', import.meta.url), 'utf8'));
+    const c = compileMap(map);
+    const at = (dir, file) => classify(c, `${dir}/${file}`).map((h) => h.id);
+    expect(at('Woodlands/!Wilderness/Textures/Dirt', 'Cracked_Dirt_A_01.jpg')).toEqual(['dirt']);
+    expect(at('Woodlands/!Wilderness/Textures/Dirt', 'Grassy_Dirt_A_01.jpg')).toEqual([]);
+    expect(at('Woodlands/!Wilderness/Textures/Grass', 'Patchy_Grass_A_01.jpg')).toEqual(['grass']);
+    expect(at('!Core_Settlements/Textures/Stone_Floors', 'Cobblestone_Square_A_01.jpg')).toEqual(['cobble']);
+    expect(at('!Core_Settlements/Textures/Stone_Floors', 'Rock_Tiles_A_Mossy_01.jpg')).toEqual(['stone']);
+    expect(at('!Core_Settlements/Textures/Stone_Floors', 'Cobblestone_A_Dirt1.jpg')).toEqual([]);
   });
 });

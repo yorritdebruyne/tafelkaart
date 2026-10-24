@@ -197,7 +197,8 @@ eigen map. Er wordt niets gekopieerd en niets gaat naar GitHub (alleen voor pers
    welke tegel hoort). Duurt ±1 minuut.
 3. Start `dev` opnieuw (de dev-server leest `.env.local` alleen bij het opstarten).
 4. In de app verschijnt de knop **Sfeer**: standaard, rijk of verlaten. Die kiest andere varianten
-   (bv. kapotte tonnen bij "verlaten").
+   (bv. kapotte tonnen bij "verlaten") en een andere vloer: gebarsten aarde, verwilderd gras en
+   losse stenen bij "verlaten", nette kasseien en kort gras bij "rijk".
 
 Daarna: `npm run fa-index` (zonder map) opnieuw als je `src/tiles/fa-map.json` aanpast of FA bijwerkt.
 Het script bewaart per soort en per grootte een handvol varianten (genoeg voor afwisseling en voor

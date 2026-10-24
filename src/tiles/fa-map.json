@@ -2,10 +2,14 @@
   "_uitleg": "Koppeling tegel-id -> mappen en bestandsnamen in Forgotten Adventures. Algemeen, niet per campagne. 'dir' = map (met submappen), 'match' = begin van de bestandsnaam (regex), 'exclude' = bestandsnamen die niet mogen.",
   "deny": "mushroom|fung|shroom|spore|mycel|mould|mold|(^|_)rats?(_|\\.|$)|gore|flesh|feces|blood|corpse|torture",
   "pxPerCell": 200,
+  "floorMaxKB": 2000,
   "themes": {
-    "standaard": { "decor": 0.2, "prefer": ["Ashen", "Earthy"], "avoid": ["Broken", "Rusty", "Fallen", "Leaking", "Damaged", "Ripped", "Burnt", "Rotten", "Fancy"] },
-    "rijk": { "decor": 0.08, "prefer": ["Fancy", "Walnut", "Red", "Gold", "Brass", "Polished", "Marble"], "avoid": ["Broken", "Rusty", "Fallen", "Leaking", "Damaged", "Ripped", "Burnt", "Rotten"] },
-    "verlaten": { "decor": 0.4, "prefer": ["Broken", "Rusty", "Fallen", "Damaged", "Leaking", "Ripped", "Rotten", "Dark"], "avoid": ["Fancy", "Gold", "Polished"] }
+    "standaard": { "decor": 0.2, "prefer": ["Ashen", "Earthy"], "avoid": ["Broken", "Rusty", "Fallen", "Leaking", "Damaged", "Ripped", "Burnt", "Rotten", "Fancy"],
+      "floors": { "dirt": "^Rocky_Dirt_", "grass": "^Grass_[A-G]_", "cobble": "^Cobblestone_A_", "stone": "^Flat_Stone_Floor_", "tiles": "^Stone_Tiles_[A-E]_", "wood": "_(Ashen|Light)\\.", "carpet": "^Carpet_Plain_" } },
+    "rijk": { "decor": 0.08, "prefer": ["Fancy", "Walnut", "Red", "Gold", "Brass", "Polished", "Marble"], "avoid": ["Broken", "Rusty", "Fallen", "Leaking", "Damaged", "Ripped", "Burnt", "Rotten"],
+      "floors": { "dirt": "^Dirt_", "grass": "^(Grass_Short|Short_Grass)_", "cobble": "^Cobblestone_Square_", "stone": "^(Large_Flagstone|Herringbone)_", "tiles": "^Stone_Square_Tiles_", "wood": "_(Walnut|Red)\\.", "carpet": "^Carpet_Design" } },
+    "verlaten": { "decor": 0.4, "prefer": ["Broken", "Rusty", "Fallen", "Damaged", "Leaking", "Ripped", "Rotten", "Dark"], "avoid": ["Fancy", "Gold", "Polished"],
+      "floors": { "dirt": "^Cracked_Dirt_", "grass": "^(Grass_(Rough|Wild|Sparse|Wind_Swept)|Patchy_Grass)_", "cobble": "^Rock_Tiles_[AB]_\\d", "stone": "^Rock_Tiles_A_Mossy_", "tiles": "^Stone_Tiles_Cracked_", "wood": "_Dark\\.", "carpet": "^Carpet_Plain_(Brown|Gray|Black)" } }
   },
   "wall": {
     "_uitleg": "Props die tegen een muur horen. Staat er een muur naast het vakje (en geeft de DM geen 'rot'), dan draait de app de prop naar die muur en schuift ze ertegen. 'prefer' = kies liefst bestanden met dit woord.",
@@ -90,13 +94,13 @@
   },
   "floor": {
     "wood":   [{ "dir": "!Core_Settlements/Textures/Wooden_Floors", "match": "^Wooden_Flooring_" }],
-    "stone":  [{ "dir": "!Core_Settlements/Textures/Stone_Floors", "match": "^Flat_Stone_Floor_", "ext": "jpg" }],
-    "cobble": [{ "dir": "!Core_Settlements/Textures/Stone_Floors", "match": "^Cobblestone_A_\\d", "ext": "jpg" }],
-    "dirt":   [{ "dir": "Woodlands/!Wilderness/Textures/Dirt", "match": "^Dirt_", "ext": "jpg" }],
-    "grass":  [{ "dir": "Woodlands/!Wilderness/Textures/Grass", "match": "^Grass_[A-G]_", "ext": "jpg" }],
+    "stone":  [{ "dir": "!Core_Settlements/Textures/Stone_Floors", "match": "^(Flat_Stone_Floor_A_\\d|Large_Flagstone_|Herringbone_A_\\d|Rock_Tiles_A_Mossy_)", "ext": "jpg" }],
+    "cobble": [{ "dir": "!Core_Settlements/Textures/Stone_Floors", "match": "^(Cobblestone_A_\\d|Cobblestone_Square_|Rock_Tiles_[AB]_\\d)", "ext": "jpg" }],
+    "dirt":   [{ "dir": "Woodlands/!Wilderness/Textures/Dirt", "match": "^(Dirt|Rocky_Dirt|Cracked_Dirt)_", "ext": "jpg" }],
+    "grass":  [{ "dir": "Woodlands/!Wilderness/Textures/Grass", "match": "^(Grass_([A-G]|Short|Rough|Wild|Sparse|Wind_Swept)_|Short_Grass_|Patchy_Grass_)", "ext": "jpg" }],
     "sand":   [{ "dir": "Volcanic/!Wilderness/Textures/Sand", "match": "^Sand_", "ext": "jpg" }],
     "carpet": [{ "dir": "!Core_Settlements/Textures/Rug_and_Carpets", "match": "^Carpet_", "ext": "jpg" }],
-    "tiles":  [{ "dir": "!Core_Settlements/Textures/Stone_Square_Tiles", "match": "^Stone_Square_Tiles_01_", "ext": "jpg" }],
+    "tiles":  [{ "dir": "!Core_Settlements/Textures/Stone_Square_Tiles", "match": "^(Stone_Square_Tiles_\\d|Stone_Tiles_)", "ext": "jpg" }],
     "water-shallow": [{ "dir": "Swamp/!Wilderness/Textures/Water", "match": "^Water_Still_", "ext": "jpg" }],
     "water-deep":    [{ "dir": "Aquatic/!Wilderness/Textures/Water", "match": "^Water_(A|Opaque)", "ext": "jpg" }],
     "lava":   [{ "dir": "Volcanic/!Wilderness/Textures/Lava", "match": "^Lava_[A-Z]", "ext": "jpg" }]

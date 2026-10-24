@@ -85,3 +85,12 @@ export const PROP: Record<string, string> = {
   ...group(SMALL, ['sacks', 'hay', 'cart', 'lantern', 'candle', 'brazier', 'bones', 'weapon-rack', 'anvil']),
   ...group(MARKER, ['trap-marker']),
 };
+
+/**
+ * Vloeren met een golvende rand (natuurlijke ondergrond). Ze lopen een beetje over de
+ * vloer eronder, zodat je de rechthoeken van de DM niet ziet. Gebouwde vloeren
+ * (hout, tegels, tapijt, ...) staan hier niet in en houden een rechte rand.
+ */
+export const ORGANIC_FLOORS = new Set([
+  'dirt', 'grass', 'sand', 'snow', 'cobble', 'water-shallow', 'water-deep', 'lava',
+]);

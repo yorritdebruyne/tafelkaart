@@ -11,11 +11,12 @@ import { isOverSpeed, pathLength, positionsText, squaresToMeters } from '../rule
 import { parseJsonLenient, parseMapText } from '../schema';
 import { createState, getPath, getToken, moveToken, newTurn, type MapState } from '../state';
 import { TEST_MAP, TEST_PATCH } from '../testmap';
+import { getSfeer, setSfeer, sfeerNames } from '../tiles';
 import { SIDE } from '../tiles/palette';
 import { copyText } from './clipboard';
 import { attachDrag } from './drag';
 import { readMapFromHash } from './hash';
-import { loadState, loadTheme, saveState, saveTheme, type Theme } from './storage';
+import { loadSfeer, loadState, loadTheme, saveSfeer, saveState, saveTheme, type Theme } from './storage';
 
 /** Wat het meldingenpaneel toont (van een kaart of van een patch). */
 interface Messages {
@@ -54,6 +55,7 @@ export class App {
     this.scroller.appendChild(this.view.svg);
     this.bindButtons();
     this.applyTheme(loadTheme());
+    this.initSfeer();
 
     attachDrag({
       svg: this.view.svg,
@@ -266,6 +268,24 @@ export class App {
     const { width, height } = mapExtent(this.state);
     this.view.svg.style.width = `${(width / S) * this.cellPx}px`;
     this.view.svg.style.height = `${(height / S) * this.cellPx}px`;
+  }
+
+  /** Sfeer-knop: alleen zichtbaar als er een Forgotten Adventures-index is. */
+  private initSfeer(): void {
+    const names = sfeerNames();
+    const btn = $<HTMLButtonElement>('btn-sfeer');
+    if (!names.length) return;
+    const saved = loadSfeer();
+    if (saved && names.includes(saved)) setSfeer(saved);
+    btn.hidden = false;
+    btn.textContent = `Sfeer: ${getSfeer()}`;
+    btn.addEventListener('click', () => {
+      const next = names[(names.indexOf(getSfeer()) + 1) % names.length];
+      setSfeer(next);
+      saveSfeer(next);
+      btn.textContent = `Sfeer: ${next}`;
+      if (this.state) renderMap(this.view, this.state, this.selectedId);
+    });
   }
 
   private applyTheme(theme: Theme): void {

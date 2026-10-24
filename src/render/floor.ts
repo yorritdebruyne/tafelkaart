@@ -1,11 +1,13 @@
 import type { MapData } from '../schema';
-import { tileImage } from '../tiles';
+import { floorImage } from '../tiles';
 import { FLOOR, UNKNOWN } from '../tiles/palette';
 import { S, svgEl } from './svg';
 
-// Vloeren: eerst een effen kleur uit palette.ts. Staat er een afbeelding in
-// src/tiles/floor/<id>.svg (of .png), dan leggen we die er bovenop als patroon
-// dat elk vakje herhaald wordt (een SVG-<pattern>, zoals een tegelvloer).
+// Vloeren: eerst een effen kleur uit palette.ts. Is er een afbeelding (eigen bestand
+// of een textuur uit Forgotten Adventures), dan leggen we die er bovenop als patroon
+// dat herhaald wordt (een SVG-<pattern>, zoals een tegelvloer). Een eigen bestand
+// is 1 vakje groot; een FA-textuur heeft haar echte grootte (bv. 3×3 vakjes).
+// Per kaart en per vloer kiest de app één textuur, zodat alle "dirt" op de kaart gelijk is.
 
 export function renderFloor(g: SVGGElement, map: MapData): void {
   g.replaceChildren();
@@ -15,15 +17,16 @@ export function renderFloor(g: SVGGElement, map: MapData): void {
   const defs = svgEl('defs', {}, g);
   const patterns = new Map<string, string>();
   const patternFor = (tile: string): string | undefined => {
-    const url = tileImage('floor', tile);
-    if (!url) return undefined;
     let id = patterns.get(tile);
-    if (!id) {
-      id = `tile-floor-${tile.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-      const pattern = svgEl('pattern', { id, width: S, height: S, patternUnits: 'userSpaceOnUse' }, defs);
-      svgEl('image', { href: url, width: S, height: S, preserveAspectRatio: 'none' }, pattern);
-      patterns.set(tile, id);
-    }
+    if (id) return id;
+    const img = floorImage(tile, `${map.name}|${tile}`);
+    if (!img) return undefined;
+    id = `tile-floor-${tile.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+    const w = img.w * S;
+    const h = img.h * S;
+    const pattern = svgEl('pattern', { id, width: w, height: h, patternUnits: 'userSpaceOnUse' }, defs);
+    svgEl('image', { href: img.url, width: w, height: h, preserveAspectRatio: 'none' }, pattern);
+    patterns.set(tile, id);
     return id;
   };
 

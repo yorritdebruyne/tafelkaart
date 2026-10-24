@@ -28,14 +28,14 @@ describe('render', () => {
     let state = createState(parseMapText(TEST_MAP).map!);
     state = applyPatch(state, { type: 'patch', version: 1, map: 'Stal', tokens: { T5: { add: { side: 'enemy', cell: 'I7' } } } }).state;
     renderMap(view, state, null);
-    expect(view.layers.fog.querySelectorAll('rect.fog')).toHaveLength(1);
+    expect(view.layers.fog.querySelectorAll('g.fog[data-region="zadelkamer"]')).toHaveLength(1);
     expect(view.layers.fog.querySelectorAll('[data-door="zadel"]')).toHaveLength(1); // deur op de rand blijft zichtbaar
     expect(view.layers.players.querySelectorAll('[data-token]')).toHaveLength(2);
     expect(view.tokenEls.has('T5')).toBe(false); // verborgen vijand: niet getekend
 
     state = applyPatch(state, JSON.parse(TEST_PATCH)).state;
     renderMap(view, state, null);
-    expect(view.layers.fog.querySelectorAll('rect.fog')).toHaveLength(0);
+    expect(view.layers.fog.querySelectorAll('g.fog')).toHaveLength(0);
     expect(view.tokenEls.has('T5')).toBe(true);
     expect(view.tokenEls.has('T2')).toBe(false);
     expect(view.layers.walls.querySelector('[data-door="zadel"]')?.classList.contains('door-open')).toBe(true);

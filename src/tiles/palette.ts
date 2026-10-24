@@ -53,12 +53,18 @@ export const SIDE: Record<'player' | 'enemy' | 'npc', string> = {
 export const UNKNOWN = '#9e9e9e';
 
 /**
- * Fog of war (F11): kleur van de mist en van de schuine streepjes erop.
- * De streepjes zorgen dat je mist niet verwart met een "void"-vloer.
+ * Fog of war (F11): donkere mist met lichtere en donkere "wolken" erin en een zachte,
+ * golvende rand. De wolken zorgen dat je mist niet verwart met een "void"-vloer.
  */
 export const FOG = {
-  color: '#1b1922',
-  hatch: 'rgba(255, 255, 255, 0.07)',
+  /** Kleur van de mist zelf. */
+  color: '#15131b',
+  /** Lichte wolken (midden van de vlek; naar de rand wordt het doorzichtig). */
+  cloudLight: 'rgba(150, 140, 185, 0.16)',
+  /** Donkere wolken. */
+  cloudDark: 'rgba(0, 0, 0, 0.45)',
+  /** Doorzichtigheid van de zachte buitenrand (0 = onzichtbaar, 1 = vol). */
+  edgeOpacity: 0.55,
 };
 
 /**

@@ -11,7 +11,7 @@
 // nog altijd netjes op zijn 2×1 (of 1×2) vakjes ligt.
 
 import type { MapData, PropItem } from '../schema';
-import { tileImage } from '../tiles';
+import { propImage } from '../tiles';
 import { PROP, UNKNOWN } from '../tiles/palette';
 import { S, svgEl } from './svg';
 
@@ -34,14 +34,20 @@ function renderProp(g: SVGGElement, p: PropItem): void {
     'data-prop': p.tile,
   }, g);
 
-  const url = tileImage('props', p.tile);
-  if (url) {
-    // Zo groot mogelijk binnen de vakjes van de prop, met behoud van verhouding
-    // ("meet"), in het midden. Een 2×2-afbeelding op 2×1 vakjes wordt dus niet
-    // platgedrukt maar kleiner getekend.
+  // Afbeelding: eigen bestand, of een passende variant uit Forgotten Adventures.
+  // De "dobbelsteen" is de plek op de kaart, zodat de keuze vast blijft.
+  const img = propImage(p.tile, lw / S, lh / S, `${p.tile}|${c1},${r1}`);
+  if (img) {
+    // In het midden, met behoud van verhouding ("meet"). Een FA-afbeelding heeft
+    // haar echte grootte (bv. 2×1 vakjes) en draait zo nodig een kwartslag om te passen.
+    const iw = img.w * S;
+    const ih = img.h * S;
+    const target = img.turn ? svgEl('g', { transform: 'rotate(90)' }, el) : el;
+    const dw = img.turn ? ih : iw;
+    const dh = img.turn ? iw : ih;
     svgEl('image', {
-      href: url, x: -lw / 2, y: -lh / 2, width: lw, height: lh, preserveAspectRatio: 'xMidYMid meet',
-    }, el);
+      href: img.url, x: -dw / 2, y: -dh / 2, width: dw, height: dh, preserveAspectRatio: 'xMidYMid meet',
+    }, target);
     return;
   }
 

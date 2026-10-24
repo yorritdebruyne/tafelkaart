@@ -10,10 +10,11 @@ src/tiles/prive/
   floor/   dirt.png, cobble.png, ...
 ```
 
-- **Naam = tegel-id** (zie `src/tiles/README.md` en de projectcontext). Hernoem dus de kopie:
-  `Barrel_Wood_A1_1x1.png` → `barrel.png`.
-- Kopieer alleen wat je nodig hebt, niet de hele bibliotheek.
-- Een tegel hier wint van een tegel met dezelfde naam in `src/tiles/props/` of `src/tiles/floor/`.
+- **Forgotten Adventures hoef je hier niet te kopiëren.** De app leest de bibliotheek rechtstreeks
+  uit je eigen map (zie de README in de hoofdmap, deel "Forgotten Adventures"). Hier komt dan alleen
+  `fa-index.json` te staan, gemaakt door `npm run fa-index`.
+- Wil je voor een tegel altijd één bepaalde afbeelding? Zet ze hier met de tegel-id als naam
+  (bv. `props/barrel.png`). Die wint van alles.
 - **Back-up:** GitHub bewaart deze map niet. Hou zelf een kopie bij (bv. OneDrive of de Raspberry Pi).
 - **Niet online zetten:** een build met deze tegels (map `dist/`) bevat de afbeeldingen. Zet die dus
   niet op GitHub Pages of een andere openbare site; thuis draaien (`dev:telefoon`, of op de Pi) is prima.

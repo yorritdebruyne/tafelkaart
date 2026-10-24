@@ -20,7 +20,7 @@ import {
   parseCell,
   rectInBounds,
 } from './coords';
-import { tileImage } from './tiles';
+import { hasTile } from './tiles';
 import { DOOR, FLOOR, PROP, WALL } from './tiles/palette';
 
 export const MAP_VERSION = 1;
@@ -240,7 +240,7 @@ export function parseMapObject(input: unknown): ParseResult {
   const unknownTiles = new Set<string>();
   const warnUnknownTile = (tile: string, where: string, known: Record<string, string>, kind?: 'floor' | 'props') => {
     // Bekend = er is een kleur in palette.ts, of een afbeelding in src/tiles/.
-    if (known[tile] || (kind && tileImage(kind, tile)) || unknownTiles.has(tile)) return;
+    if (known[tile] || (kind && hasTile(kind, tile)) || unknownTiles.has(tile)) return;
     unknownTiles.add(tile);
     warnings.push(`${where}: onbekende tegel "${tile}", wordt grijs getekend.`);
   };

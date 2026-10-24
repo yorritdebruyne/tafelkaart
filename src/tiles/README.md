@@ -23,7 +23,26 @@ Hier begint het visuele werk. Je hoeft geen code aan te raken: bestanden toevoeg
 Dan tekent de app een **reserve-tekening**: een gekleurd blokje met de naam, en een wit streepje aan de bovenkant (zo zie je de rotatie). De kleur per categorie staat in `palette.ts` (`PROP`).
 Een id die nergens bestaat (geen kleur, geen bestand) wordt grijs met een stippelrand, en de app geeft een waarschuwing.
 
-`props/crate.svg` is alleen een voorbeeld om te tonen dat het werkt. Vervang of verwijder het gerust.
+`props/_voorbeeld.svg` is alleen een voorbeeld om te tonen dat het werkt (tegel-id `_voorbeeld`).
+
+## Volgorde
+
+Voor elke tegel zoekt de app, in deze volgorde:
+
+1. `prive/props/<id>.png` (of `prive/floor/`): één vaste afbeelding die niet op GitHub mag.
+2. `props/<id>` (of `floor/`): eigen tekening of vrije licentie.
+3. **Forgotten Adventures**, automatisch (zie de README in de hoofdmap, deel "Forgotten Adventures").
+4. De reserve-tekening.
+
+Wil je één bepaalde FA-ton altijd gebruiken? Kopieer hem als `prive/props/barrel.png` (stap 1 wint).
+
+## Forgotten Adventures: welke mappen?
+
+`fa-map.json` zegt per tegel-id in welke FA-map de app zoekt en met welk woord de bestandsnaam begint.
+Je mag dit bestand aanpassen of uitbreiden; draai daarna opnieuw `npm run fa-index`.
+De sferen (standaard, rijk, verlaten) staan er ook: woorden in de bestandsnaam die de app
+liever wel (`prefer`) of liever niet (`avoid`) kiest. Een nieuwe sfeer toevoegen mag.
+Paddenstoelen, schimmel, ratten en dergelijke worden altijd uitgesloten (`deny`).
 
 ## Regels
 

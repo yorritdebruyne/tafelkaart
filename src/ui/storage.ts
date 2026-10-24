@@ -70,6 +70,25 @@ export function upgradeSaved(saved: Saved): Saved | null {
   };
 }
 
+const SFEER_KEY = 'tafelkaart.v1.sfeer';
+
+/** Sfeer van de tegels (standaard, rijk, verlaten, ...). */
+export function saveSfeer(name: string): void {
+  try {
+    localStorage.setItem(SFEER_KEY, name);
+  } catch {
+    /* geen opslag beschikbaar */
+  }
+}
+
+export function loadSfeer(): string | null {
+  try {
+    return localStorage.getItem(SFEER_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export type Theme = 'auto' | 'light' | 'dark';
 
 export function saveTheme(theme: Theme): void {

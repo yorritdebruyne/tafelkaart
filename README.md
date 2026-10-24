@@ -172,6 +172,31 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
   geladen, dus grote PNG's maken de app niet traag.
 - `terrain` en `lights` worden al aanvaard maar pas in M3 getekend (info-melding).
 
+## 5c. Forgotten Adventures (eenmalig instellen)
+
+De app kan de gratis **Core Mapmaking Pack** van Forgotten Adventures gebruiken, rechtstreeks uit je
+eigen map. Er wordt niets gekopieerd en niets gaat naar GitHub (alleen voor persoonlijk gebruik).
+
+1. Pak de drie delen (`Part1`, `Part2`, `Part3`) uit in één map, bv. `C:\ForgottonAdventures`.
+2. In de PyCharm-terminal, **één keer**:
+   ```
+   npm run fa-index -- "C:\ForgottonAdventures"
+   ```
+   Dat maakt `.env.local` (onthoudt de map) en `src/tiles/prive/fa-index.json` (welke afbeelding bij
+   welke tegel hoort). Duurt ±1 minuut.
+3. Start `dev` opnieuw (de dev-server leest `.env.local` alleen bij het opstarten).
+4. In de app verschijnt de knop **Sfeer**: standaard, rijk of verlaten. Die kiest andere varianten
+   (bv. kapotte tonnen bij "verlaten").
+
+Daarna: `npm run fa-index` (zonder map) opnieuw als je `src/tiles/fa-map.json` aanpast of FA bijwerkt.
+
+- Props worden op hun **echte grootte** getekend (FA: 200 px per vakje), in het midden van hun vakjes.
+  Past een afbeelding niet, dan zoekt de app een kleinere variant, draait ze een kwartslag, of schaalt ze in.
+- Per vakje kiest de app een **variant**, altijd dezelfde op dezelfde plek.
+- Vloeren worden FA-texturen, ook op hun echte grootte.
+- **Niet online zetten:** de afbeeldingen komen van je pc via de dev-server. Een build voor de
+  Raspberry Pi volgt later.
+
 ## 6. Goed om te weten
 
 - **Klembord op je telefoon:** via `http://192.168…` blokkeert de browser het moderne klembord.

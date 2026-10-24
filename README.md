@@ -96,6 +96,7 @@ Klik in de app op **Laden → Testkaart (stal)** en controleer:
 - [ ] Plak `voorbeelden/testpatch-stal.json` met `"map": "Grot"` → foutmelding, niets veranderd.
 - [ ] Sleep Akmenos tegen een muur of de dichte deur bij H7: hij stopt ervoor. Na de testpatch (deur open) mag hij erdoor.
 - [ ] Sleep Akmenos op Amara: hij blijft staan waar hij was. Sleep hem dóór Amara naar G9: dat mag.
+- [ ] Sleep Akmenos dóór een vijand (T1 of T2): hij stopt ervoor.
 
 Iets mis? Noteer wat je deed, wat je verwachtte en wat er gebeurde (screenshot helpt) en geef het aan Claude.
 
@@ -161,7 +162,8 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
 - **F11** fog of war: `regions` met `hidden` (standaard `true`). Speler-tokens blijven zichtbaar;
   vijanden en npc's in de mist worden niet getekend en niet gekopieerd.
 - Slepen: niet door muren, dichte deuren of ramen (open deuren en bogen wel), niet schuin tussen
-  twee muren door. Niet eindigen op een ander zichtbaar token; erdoor lopen mag. De DM kan via een
+  twee muren door. Niet door een zichtbare vijand. Niet eindigen op een ander zichtbaar token;
+  door een bondgenoot of npc lopen mag. De DM kan via een
   patch altijd alles verzetten.
 - Tegel-lader: afbeelding in `src/tiles/floor/` of `src/tiles/props/` → die wordt gebruikt,
   anders een reserve-tekening.

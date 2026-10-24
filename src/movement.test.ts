@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseCell } from './coords';
-import { buildBlockers, canStep, isOccupied, landingIndex, stepsBetween } from './movement';
+import { buildBlockers, canStep, isEnemyAt, isOccupied, landingIndex, stepsBetween } from './movement';
 import { applyPatch } from './patch';
 import { parseMapText } from './schema';
 import { createState } from './state';
@@ -68,5 +68,20 @@ describe('niet op elkaar', () => {
 
   it('2×2 overlapt een 1×1', () => {
     expect(isOccupied(stal().map, c('E8'), 2, 'X')).toBe(true); // E8:F9 raakt Ak en Am
+  });
+});
+
+describe('niet door vijanden', () => {
+  it('vijand houdt tegen, bondgenoot en npc niet', () => {
+    const { map } = stal();
+    expect(isEnemyAt(map, c('B2'), 1, 'Ak')).toBe(true); // T1
+    expect(isEnemyAt(map, c('F9'), 1, 'Ak')).toBe(false); // Amara
+    expect(isEnemyAt(map, c('I2'), 1, 'Ak')).toBe(false); // paard (npc)
+    expect(isEnemyAt(map, c('A1'), 2, 'Ak')).toBe(true); // 2×2 op A1 raakt T1 op B2
+  });
+
+  it('vijand in de mist houdt niet tegen (anders verklapt het iets)', () => {
+    const s = applyPatch(stal(), { type: 'patch', version: 1, map: 'Stal', tokens: { T5: { add: { side: 'enemy', cell: 'I7' } } } }).state;
+    expect(isEnemyAt(s.map, c('I7'), 1, 'Ak')).toBe(false);
   });
 });

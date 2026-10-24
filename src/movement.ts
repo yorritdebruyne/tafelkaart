@@ -5,7 +5,10 @@
 //    of omgekeerd) kan gaan: zo glip je niet tussen twee muren door die elkaar
 //    in een hoekpunt raken.
 // 2. Niet eindigen op een vakje waar al een ander (zichtbaar) token staat.
-//    Erdoor lopen mag wel (5e: door een bondgenoot bewegen mag, er stoppen niet).
+//    Door een bondgenoot of npc lopen mag wel, door een vijand niet
+//    (5e 2024: je mag door de ruimte van een bondgenoot bewegen, niet door die
+//    van een vijand, behalve bij een groot verschil in grootte; dat laatste
+//    laten we aan de DM).
 //    Tokens in de mist tellen niet mee, anders verklapt de app waar ze staan.
 //
 // De DM kan tokens altijd overal zetten met een patch; deze regels gelden
@@ -119,6 +122,15 @@ export function stepsBetween(a: Cell, b: Cell): Cell[] {
 export function isOccupied(map: MapData, cell: Cell, size: number, selfId: string): boolean {
   return map.tokens.some((t) => {
     if (t.id === selfId || isTokenHidden(map, t)) return false;
+    return cell.c < t.cell.c + t.size && t.cell.c < cell.c + size
+      && cell.r < t.cell.r + t.size && t.cell.r < cell.r + size;
+  });
+}
+
+/** Staat er op deze plek een zichtbare vijand? Daar kan een speler niet door. */
+export function isEnemyAt(map: MapData, cell: Cell, size: number, selfId: string): boolean {
+  return map.tokens.some((t) => {
+    if (t.id === selfId || t.side !== 'enemy' || isTokenHidden(map, t)) return false;
     return cell.c < t.cell.c + t.size && t.cell.c < cell.c + size
       && cell.r < t.cell.r + t.size && t.cell.r < cell.r + size;
   });

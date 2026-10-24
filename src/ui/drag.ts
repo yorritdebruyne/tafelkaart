@@ -5,15 +5,15 @@
 //   pointermove               -> token volgt de vinger, weg wordt bijgewerkt per vakje,
 //   pointerup                 -> token klikt vast op het laatste vakje dat het mocht bereiken.
 //
-// Muren en dichte deuren houden het token tegen, en je kan niet eindigen op een
-// ander token (zie movement.ts). Het blauwe vierkant toont waar je uitkomt.
+// Muren, dichte deuren en vijanden houden het token tegen, en je kan niet eindigen
+// op een ander token (zie movement.ts). Het blauwe vierkant toont waar je uitkomt.
 //
 // Tijdens het slepen passen we alleen de transform van dat ene token aan
 // (en de stippellijn). De rest van de kaart blijft staan: zo blijft het vlot.
 
 import { type Cell, cellInBounds, sameCell } from '../coords';
 import { S, svgEl } from '../render/svg';
-import { type Blockers, buildBlockers, canStep, landingIndex, stepsBetween } from '../movement';
+import { type Blockers, buildBlockers, canStep, isEnemyAt, landingIndex, stepsBetween } from '../movement';
 import { extendPath } from '../rules';
 import { getPath, getToken, type MapState } from '../state';
 
@@ -138,6 +138,7 @@ export function attachDrag(host: DragHost): void {
       let at = last;
       for (const step of stepsBetween(last, cell)) {
         if (!canStep(drag.blockers, at, step, drag.size)) break;
+        if (isEnemyAt(state.map, step, drag.size, drag.id)) break; // niet door een vijand
         drag.path = extendPath(drag.path, step);
         at = step;
       }

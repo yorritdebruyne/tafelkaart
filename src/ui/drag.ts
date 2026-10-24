@@ -3,13 +3,17 @@
 // "Pointer events" zijn één API voor muis, vinger en pen. Het verloop:
 //   pointerdown op een token  -> slepen start, we "vangen" de pointer (capture),
 //   pointermove               -> token volgt de vinger, weg wordt bijgewerkt per vakje,
-//   pointerup                 -> token klikt vast op het dichtstbijzijnde vakje.
+//   pointerup                 -> token klikt vast op het laatste vakje dat het mocht bereiken.
+//
+// Muren en dichte deuren houden het token tegen, en je kan niet eindigen op een
+// ander token (zie movement.ts). Het blauwe vierkant toont waar je uitkomt.
 //
 // Tijdens het slepen passen we alleen de transform van dat ene token aan
 // (en de stippellijn). De rest van de kaart blijft staan: zo blijft het vlot.
 
 import { type Cell, cellInBounds, sameCell } from '../coords';
 import { S, svgEl } from '../render/svg';
+import { type Blockers, buildBlockers, canStep, landingIndex, stepsBetween } from '../movement';
 import { extendPath } from '../rules';
 import { getPath, getToken, type MapState } from '../state';
 
@@ -39,6 +43,9 @@ interface DragState {
   startY: number;
   moved: boolean;
   path: Cell[];
+  blockers: Blockers;
+  /** Index in `path` waar het token uitkomt (laatste vakje zonder ander token). */
+  landing: number;
 }
 
 const TAP_SLOP_PX = 6;
@@ -94,7 +101,10 @@ export function attachDrag(host: DragHost): void {
       startY: e.clientY,
       moved: false,
       path: getPath(state, id),
+      blockers: buildBlockers(state.map),
+      landing: 0,
     };
+    drag.landing = drag.path.length - 1;
   });
 
   svg.addEventListener('pointermove', (e) => {
@@ -122,12 +132,21 @@ export function attachDrag(host: DragHost): void {
       c: clamp(Math.round(x / S), 0, cols - drag.size),
       r: clamp(Math.round(y / S), 0, rows - drag.size),
     };
-    if (cellInBounds(cell, cols, rows, drag.size) && !sameCell(cell, drag.path[drag.path.length - 1])) {
-      drag.path = extendPath(drag.path, cell);
-      host.onPreview(drag.id, drag.path);
+    const last = drag.path[drag.path.length - 1];
+    if (cellInBounds(cell, cols, rows, drag.size) && !sameCell(cell, last)) {
+      // Stap voor stap naar het nieuwe vakje; stop bij een muur of dichte deur.
+      let at = last;
+      for (const step of stepsBetween(last, cell)) {
+        if (!canStep(drag.blockers, at, step, drag.size)) break;
+        drag.path = extendPath(drag.path, step);
+        at = step;
+      }
+      drag.landing = landingIndex(state.map, drag.path, drag.size, drag.id);
+      host.onPreview(drag.id, drag.path.slice(0, drag.landing + 1));
     }
-    target?.setAttribute('x', String(cell.c * S));
-    target?.setAttribute('y', String(cell.r * S));
+    const land = drag.path[drag.landing];
+    target?.setAttribute('x', String(land.c * S));
+    target?.setAttribute('y', String(land.r * S));
 
     autoScroll(host.scroller, e);
   });
@@ -140,7 +159,7 @@ export function attachDrag(host: DragHost): void {
     target = null;
     if (svg.hasPointerCapture(e.pointerId)) svg.releasePointerCapture(e.pointerId);
     if (cancelled) host.onCancel();
-    else if (d.moved) host.onCommit(d.id, d.path);
+    else if (d.moved) host.onCommit(d.id, d.path.slice(0, d.landing + 1));
     else host.onTap(d.id);
   };
   svg.addEventListener('pointerup', (e) => finish(e, false));

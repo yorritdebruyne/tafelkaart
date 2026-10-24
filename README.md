@@ -200,6 +200,17 @@ eigen map. Er wordt niets gekopieerd en niets gaat naar GitHub (alleen voor pers
    (bv. kapotte tonnen bij "verlaten").
 
 Daarna: `npm run fa-index` (zonder map) opnieuw als je `src/tiles/fa-map.json` aanpast of FA bijwerkt.
+Het script bewaart per soort en per grootte een handvol varianten (genoeg voor afwisseling en voor
+elke sfeer): ±1000 bestanden i.p.v. 16.700. Alles houden: `npm run fa-index -- --alles`.
+
+**Zonder je pc spelen (Raspberry Pi, offline, later printen en tv):**
+```
+npm run fa-bundle
+```
+Dat bouwt de app in `dist/` en kopieert de gebruikte FA-afbeeldingen naar `dist/fa/` (±200 MB).
+`dist/` werkt daarna op zichzelf: bekijk ze met `npm run preview`, of zet de map op je Raspberry Pi
+achter een gewone webserver. Opnieuw draaien na elke `git pull` of `fa-index`.
+**`dist/` met FA-afbeeldingen niet online zetten** (alleen persoonlijk gebruik); thuis is prima.
 
 - Props worden op hun **echte grootte** getekend (FA: 200 px per vakje), in het midden van hun vakjes.
   Past een afbeelding niet, dan zoekt de app een kleinere variant, draait ze een kwartslag, of schaalt ze in.
@@ -217,8 +228,7 @@ Daarna: `npm run fa-index` (zonder map) opnieuw als je `src/tiles/fa-map.json` a
 - **Muur-props** (ladder, boekenkast, kast, haard, wapenrek): staat er een muur naast het vakje en
   geeft de DM geen `rot`, dan draait de app de prop naar die muur en schuift ze ertegen. Welke props
   dat zijn, staat onder `"wall"` in `src/tiles/fa-map.json`.
-- **Niet online zetten:** de afbeeldingen komen van je pc via de dev-server. Een build voor de
-  Raspberry Pi volgt later.
+- **Niet online zetten:** de afbeeldingen komen van je pc (dev-server) of uit `dist/fa/` (bundel).
 
 ## 6. Goed om te weten
 

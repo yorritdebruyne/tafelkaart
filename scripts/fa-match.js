@@ -113,3 +113,79 @@ export function imageSize(buf) {
   }
   return null;
 }
+
+// ---------------------------------------------------------------- index slanker maken
+//
+// FA heeft per soort soms duizenden varianten (puin, tafels, pilaren). We bewaren er per
+// tegel-id en per grootte een handvol: eerst de beste voor elke sfeer, dan aangevuld met
+// een vaste "dobbelsteen". Zo is er genoeg afwisseling, heeft elke sfeer zijn varianten,
+// en blijft de bundel voor de Raspberry Pi klein (honderden MB i.p.v. bijna 2 GB).
+
+function hashStr(text) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+function themeScoreOf(path, theme) {
+  const words = new Set(path.slice(path.lastIndexOf('/') + 1).split(/[_.]/).map((w) => w.toLowerCase()));
+  let s = 0;
+  for (const w of theme.prefer ?? []) if (words.has(w.toLowerCase())) s += 1;
+  for (const w of theme.avoid ?? []) if (words.has(w.toLowerCase())) s -= 10;
+  return s;
+}
+
+/** Kies hoogstens `k` items: per sfeer de `perTheme` beste, dan aanvullen in vaste volgorde. */
+export function pickSome(items, pathOf, themes, k, perTheme = 2) {
+  if (items.length <= k) return items;
+  const byHash = [...items].sort((a, b) => hashStr(pathOf(a)) - hashStr(pathOf(b)));
+  const chosen = new Set();
+  for (const theme of Object.values(themes)) {
+    const ranked = [...byHash].sort((a, b) => themeScoreOf(pathOf(b), theme) - themeScoreOf(pathOf(a), theme));
+    let n = 0;
+    for (const it of ranked) {
+      if (n >= perTheme || chosen.size >= k) break;
+      if (!chosen.has(it)) { chosen.add(it); n++; }
+    }
+  }
+  for (const it of byHash) {
+    if (chosen.size >= k) break;
+    chosen.add(it);
+  }
+  return items.filter((it) => chosen.has(it));
+}
+
+/** Het hele index slanker maken (props per grootte, vloeren, deuren, versiering). */
+export function pruneIndex(index, limits = { props: 6, floor: 4, doors: 6, decor: 24 }) {
+  const themes = index.themes ?? {};
+  const path = (e) => e[0];
+  for (const [id, list] of Object.entries(index.props)) {
+    const bySize = new Map();
+    for (const e of list) {
+      const key = `${e[1]}x${e[2]}`;
+      if (!bySize.has(key)) bySize.set(key, []);
+      bySize.get(key).push(e);
+    }
+    index.props[id] = [...bySize.values()].flatMap((g) => pickSome(g, path, themes, limits.props));
+  }
+  for (const [id, list] of Object.entries(index.floor)) index.floor[id] = pickSome(list, path, themes, limits.floor);
+  for (const d of Object.values(index.doors ?? {})) d.doors = pickSome(d.doors, path, themes, limits.doors);
+  for (const [id, list] of Object.entries(index.decor ?? {})) index.decor[id] = pickSome(list, (p) => p, themes, limits.decor, 0);
+  return index;
+}
+
+/** Alle FA-paden die in een index voorkomen (voor de bundel). */
+export function indexPaths(index) {
+  const out = new Set();
+  for (const list of Object.values(index.props ?? {})) for (const e of list) out.add(e[0]);
+  for (const list of Object.values(index.floor ?? {})) for (const e of list) out.add(e[0]);
+  for (const w of Object.values(index.walls ?? {})) for (const e of [...w.strips, ...w.connectors]) out.add(e[0]);
+  for (const d of Object.values(index.doors ?? {})) for (const e of [...d.doors, ...d.frames]) out.add(e[0]);
+  for (const list of Object.values(index.decor ?? {})) for (const p of list) out.add(p);
+  return [...out];
+}

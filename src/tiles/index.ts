@@ -14,7 +14,7 @@
 // bestanden die op het patroon passen. Met '?url' krijgen we per bestand een
 // adres; de browser laadt de afbeelding pas als ze op de kaart komt.
 
-import { type FaIndex, pickFloor, pickProp, pickWall } from './fa';
+import { type FaIndex, pickDoor, pickFloor, pickProp, pickWall } from './fa';
 
 const FILES = import.meta.glob(
   ['./{floor,props}/*.{svg,png,webp,jpg,jpeg}', './prive/{floor,props}/*.{svg,png,webp,jpg,jpeg}'],
@@ -90,6 +90,8 @@ export interface PropImage {
   h: number;
   /** Kwartslag draaien om te passen. */
   turn: boolean;
+  /** Groter dan de vakjes van de DM: uitlijnen op het raster. */
+  overflow?: boolean;
   /** Waar de tekening in de afbeelding staat (0..1): x1, y1, x2, y2. */
   box?: [number, number, number, number];
 }
@@ -113,7 +115,9 @@ export function propImage(id: string, lw: number, lh: number, seed: string): Pro
     noTurn: !!wall,
   });
   if (!pick) return undefined;
-  return { url: faUrl(pick.path), w: pick.w * pick.scale, h: pick.h * pick.scale, turn: pick.turn, box: pick.box };
+  return {
+    url: faUrl(pick.path), w: pick.w * pick.scale, h: pick.h * pick.scale, turn: pick.turn, overflow: pick.overflow, box: pick.box,
+  };
 }
 
 /** Afbeelding voor een vloer: adres + grootte van één herhaling, in vakjes. */
@@ -143,6 +147,29 @@ export function wallImage(id: string, seed: string): WallImage | undefined {
     out.connector = { url: faUrl(cPath), w: cw / px, h: ch / px };
   }
   return out;
+}
+
+/** Deur uit FA: blad en kozijn, afmetingen in vakjes. */
+export interface DoorImage {
+  door: { url: string; w: number; h: number };
+  frame?: { url: string; w: number; h: number };
+}
+
+export function doorImage(id: string, seed: string, frameSeed: string): DoorImage | undefined {
+  const pick = pickDoor(fa?.doors?.[id], seed, frameSeed, fa?.themes[sfeer]);
+  if (!pick) return undefined;
+  const [dp, dw, dh] = pick.door;
+  const out: DoorImage = { door: { url: faUrl(dp), w: dw, h: dh } };
+  if (pick.frame) out.frame = { url: faUrl(pick.frame[0]), w: pick.frame[1], h: pick.frame[2] };
+  return out;
+}
+
+/** Versiering voor een vloertype (adressen) en hoeveel (deel van de vakjes), volgens de sfeer. */
+export function decorFor(floor: string): { urls: string[]; density: number } | undefined {
+  const list = fa?.decor?.[floor];
+  if (!list?.length || !fa) return undefined;
+  const density = fa.themes[sfeer]?.decor ?? 0.15;
+  return { urls: list.map(faUrl), density };
 }
 
 /** Alle tegel-id's met een vaste afbeelding. */

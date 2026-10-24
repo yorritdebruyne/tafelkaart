@@ -10,7 +10,7 @@ import { applyPatch } from '../patch';
 import { isOverSpeed, pathLength, positionsText, squaresToMeters } from '../rules';
 import { parseJsonLenient, parseMapText } from '../schema';
 import { createState, getPath, getToken, moveToken, newTurn, type MapState } from '../state';
-import { TEST_MAP, TEST_PATCH } from '../testmap';
+import { TEST_MAP, TEST_PATCH, TEST_VILLAGE } from '../testmap';
 import { getSfeer, setSfeer, sfeerNames } from '../tiles';
 import { SIDE } from '../tiles/palette';
 import { copyText } from './clipboard';
@@ -204,6 +204,10 @@ export class App {
     $('btn-testmap').addEventListener('click', () => {
       this.input.value = TEST_MAP;
       if (this.loadText(TEST_MAP)) this.dialog.close();
+    });
+    $('btn-testvillage').addEventListener('click', () => {
+      this.input.value = TEST_VILLAGE;
+      if (this.loadText(TEST_VILLAGE)) this.dialog.close();
     });
     $('btn-testpatch').addEventListener('click', () => {
       this.input.value = TEST_PATCH;

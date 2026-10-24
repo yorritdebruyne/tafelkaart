@@ -27,9 +27,9 @@ describe('variant kiezen (FA)', () => {
     expect(pickProp(HAY, 1, 1, 'x')!.path).toMatch(/_1x1\.png$/);
   });
 
-  it('niets past: de kleinste, ingeschaald', () => {
-    const p = pickProp([['t/Trough_A_2x1.png', 2, 1]], 1, 1, 'x')!;
-    expect([p.w, p.h, p.scale]).toEqual([2, 1, 0.5]);
+  it('niets past: de kleinste, op echte grootte (overflow)', () => {
+    const p = pickProp([['t/Trough_A_2x1.png', 2, 1], ['t/Trough_B_3x2.png', 3, 2]], 1, 1, 'x')!;
+    expect([p.w, p.h, p.scale, p.overflow]).toEqual([2, 1, 1, true]);
   });
 
   it('zelfde plek = zelfde keuze; andere plekken = variatie', () => {

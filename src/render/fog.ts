@@ -74,7 +74,7 @@ export function renderFog(g: SVGGElement, map: MapData): void {
 
   // Een deur op de rand van de mist zie je van buitenaf wel: die tekenen we nog
   // eens bovenop, zodat je ziet of ze open, dicht of op slot is.
-  for (const d of map.doors) if (onFogEdge(map, d)) renderDoor(g, d);
+  for (const d of map.doors) if (onFogEdge(map, d)) renderDoor(g, d, map.name);
 }
 
 function onFogEdge(map: MapData, d: DoorItem): boolean {

@@ -105,7 +105,8 @@ describe('render', () => {
       'fa/Hay/Hay_Bale_01_A1_2x1.png', 'fa/Hay/Hay_Bale_A_01_1x1.png', 'fa/Troughs/Trough_A_2x1.png',
     ]);
     expect([imgs[0].getAttribute('width'), imgs[0].getAttribute('height')]).toEqual(['128', '64']);
-    expect([imgs[2].getAttribute('width'), imgs[2].getAttribute('height')]).toEqual(['64', '32']); // 2×1 in 1 vakje: ingeschaald
+    // 2×1 op 1 vakje: echte grootte, vanaf het vakje naar rechts (C3:D3).
+    expect(['x', 'y', 'width', 'height'].map((a) => imgs[2].getAttribute(a))).toEqual(['-32', '-32', '128', '64']);
     const pattern = view.layers.floor.querySelector('pattern')!;
     expect(pattern.getAttribute('width')).toBe('320'); // 1000 px = 5 vakjes
     expect(pattern.querySelector('image')?.getAttribute('href')).toBe('fa/Dirt/Dirt_A_01.jpg');
@@ -160,5 +161,58 @@ describe('render', () => {
     expect([pattern.getAttribute('width'), pattern.getAttribute('y')]).toEqual(['528', '-32']); // 1650 px = 8,25 vakjes
     // Palissade heeft geen FA-strook: gewone lijn.
     expect(view.layers.walls.querySelectorAll('polyline')).toHaveLength(1);
+  });
+
+  it('FA-deur: kozijn + blad op de rand; open deur draait naar het vakje', () => {
+    setFaIndex({
+      pxPerCell: 200, themes: { standaard: { prefer: [], avoid: [] } }, props: {}, floor: {},
+      doors: { 'door-wood': { doors: [['D/Door_Wood_A_1x1.png', 1, 1]], frames: [['D/Door_Frame_Wood_A_3x1.png', 3, 1]] } },
+    });
+    const res = parseMapObject({
+      type: 'map', version: 1, name: 'X', cols: 4, rows: 4,
+      doors: [
+        { id: 'a', cell: 'B2', side: 'Z', state: 'closed' },
+        { id: 'b', cell: 'B2', side: 'W', state: 'open' },
+        { id: 'c', cell: 'C3', side: 'N', state: 'open' },
+      ],
+    });
+    const view = createMapView();
+    renderMap(view, createState(res.map!), null);
+    const doors = [...view.layers.walls.querySelectorAll<SVGGElement>('.door-fa')];
+    expect(doors.map((d) => d.getAttribute('transform'))).toEqual([
+      'translate(96 128) rotate(0)', 'translate(64 96) rotate(90)', 'translate(160 128) rotate(0)',
+    ]);
+    expect(doors[0].querySelector('.door-frame')?.getAttribute('width')).toBe('192');
+    // Gesloten: blad niet gedraaid. Open naar het vakje: W-kant -> -90, N-kant -> +90.
+    const leafRot = (d: SVGGElement) => d.querySelector('image.door-leaf-img')!.parentElement!.getAttribute('transform');
+    expect(leafRot(doors[0])).toBeNull();
+    expect(leafRot(doors[1])).toBe('rotate(-90 -32 0)');
+    expect(leafRot(doors[2])).toBe('rotate(90 -32 0)');
+  });
+
+  it('versiering: vast per vakje, niet op props, hoeveelheid volgens de sfeer', () => {
+    const index = {
+      pxPerCell: 200, props: {}, floor: {},
+      themes: { standaard: { prefer: [], avoid: [], decor: 0.5 }, leeg: { prefer: [], avoid: [], decor: 0 } },
+      decor: { dirt: ['L/Fallen_Leaf_A1_1x1.png', 'L/Twig_A1_1x1.png'] },
+    };
+    setFaIndex(index);
+    const map = parseMapObject({
+      type: 'map', version: 1, name: 'X', cols: 10, rows: 10,
+      floor: [{ tile: 'dirt', area: 'A1:J10' }], props: [{ tile: 'hay', area: 'A1:J2' }],
+    }).map!;
+    const count = () => {
+      const view = createMapView();
+      renderMap(view, createState(map), null);
+      return [...view.layers.decor.querySelectorAll('image')];
+    };
+    const first = count();
+    expect(first.length).toBeGreaterThan(20); // ±50 % van 80 vrije vakjes
+    expect(first.length).toBeLessThan(60);
+    expect(count().map((i) => i.getAttribute('transform'))).toEqual(first.map((i) => i.getAttribute('transform')));
+    // Niets in rij 1-2 (daar ligt hooi).
+    expect(first.every((i) => Number(/translate\([\d.]+ ([\d.]+)\)/.exec(i.getAttribute('transform')!)![1]) > 128)).toBe(true);
+    setSfeer('leeg');
+    expect(count()).toHaveLength(0);
   });
 });

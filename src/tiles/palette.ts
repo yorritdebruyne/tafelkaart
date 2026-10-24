@@ -60,7 +60,7 @@ export const FOG = {
   /** Kleur van de mist zelf. */
   color: '#15131b',
   /** Lichte wolken (midden van de vlek; naar de rand wordt het doorzichtig). */
-  cloudLight: 'rgba(150, 140, 185, 0.16)',
+  cloudLight: 'rgba(150, 140, 185, 0.08)',
   /** Donkere wolken. */
   cloudDark: 'rgba(0, 0, 0, 0.45)',
   /** Doorzichtigheid van de zachte buitenrand (0 = onzichtbaar, 1 = vol). */
@@ -100,3 +100,12 @@ export const PROP: Record<string, string> = {
 export const ORGANIC_FLOORS = new Set([
   'dirt', 'grass', 'sand', 'snow', 'cobble', 'water-shallow', 'water-deep', 'lava',
 ]);
+
+/**
+ * Schaduw onder props, muren en deuren (in vakjes). Zet `on` op false als slepen op een
+ * oude telefoon traag aanvoelt.
+ */
+export const SHADOW = { on: true, dx: 0.05, dy: 0.08, blur: 0.06, opacity: 0.55 };
+
+/** Tokens: binnenkant (donker) en een dunne donkere buitenrand voor contrast. */
+export const TOKEN = { inner: '#2a2420', innerLight: '#4a403a', outline: 'rgba(0, 0, 0, 0.7)' };

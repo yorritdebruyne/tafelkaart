@@ -32,7 +32,12 @@ export function renderTokens(
       'data-token': t.id,
     }, parent);
     const half = (t.size * S) / 2;
-    svgEl('circle', { cx: half, cy: half, r: t.size * S * 0.42, fill: SIDE[t.side], class: 'token-body' }, el);
+    const r = t.size * S * 0.42;
+    // Schaduw (een verschoven donkere schijf: goedkoper dan een filter tijdens het slepen),
+    // dan een donkere schijf met een gekleurde ring per kant, en een dunne donkere buitenrand.
+    svgEl('circle', { cx: half + S * 0.04, cy: half + S * 0.07, r: r + S * 0.02, class: 'token-shadow' }, el);
+    svgEl('circle', { cx: half, cy: half, r, fill: 'url(#token-fill)', stroke: SIDE[t.side], class: 'token-body' }, el);
+    svgEl('circle', { cx: half, cy: half, r: r + S * 0.045, class: 'token-outline' }, el);
     const label = svgEl('text', {
       x: half,
       y: half,

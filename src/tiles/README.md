@@ -14,7 +14,7 @@ Hier begint het visuele werk. Je hoeft geen code aan te raken: bestanden toevoeg
 - **Bestandsnaam = tegel-id** uit de projectcontext: `src/tiles/props/trough.svg` is de tegel `trough`.
 - Formaten: `.svg`, `.png`, `.webp`, `.jpg`. Voor PNG: liefst ± 300–512 px per vakje (scherp bij printen op 25 mm). Staan `barrel.png` en `barrel.svg` er allebei, dan wint de PNG.
 - Teken **vierkant** (bv. `viewBox="0 0 64 64"`), met **boven = noord**. Een prop met `"rot": 90` draait met de klok mee.
-- Een prop over meerdere vakjes (`"area": "A1:B1"`) wordt **uitgerekt** over die vakjes. Teken zo'n tegel dus op die maat (bv. 128 × 64), of laat de DM losse vakjes gebruiken.
+- Een prop wordt **nooit vervormd**: de afbeelding komt zo groot mogelijk in zijn vakjes, met behoud van verhouding, in het midden. Een 2×2-hooibaal op 2×1 vakjes wordt dus kleiner getekend, niet platgedrukt. Teken een prop van 2×1 vakjes dus op die maat (bv. 1024 × 512).
 - Een vloer-PNG met doorzichtige stukken toont daar de kleur uit `palette.ts`.
 - Nieuw bestand toegevoegd terwijl `dev` draait? De browser herlaadt vanzelf.
 

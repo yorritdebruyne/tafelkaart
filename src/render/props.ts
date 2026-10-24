@@ -4,6 +4,8 @@
 // Anders een reserve-tekening: een gekleurd blokje met de naam en een
 // streepje aan de bovenkant, zodat je de rotatie ziet.
 //
+// Afbeeldingen worden nooit vervormd: ze passen in de vakjes met behoud van verhouding.
+//
 // Rotatie: we tekenen de prop rond het midden van zijn vakje(s). Bij 90° of
 // 270° wisselen breedte en hoogte, zodat een prop van 2×1 vakjes na draaien
 // nog altijd netjes op zijn 2×1 (of 1×2) vakjes ligt.
@@ -34,8 +36,12 @@ function renderProp(g: SVGGElement, p: PropItem): void {
 
   const url = tileImage('props', p.tile);
   if (url) {
-    // Uitgerekt over alle vakjes van de prop (preserveAspectRatio none).
-    svgEl('image', { href: url, x: -lw / 2, y: -lh / 2, width: lw, height: lh, preserveAspectRatio: 'none' }, el);
+    // Zo groot mogelijk binnen de vakjes van de prop, met behoud van verhouding
+    // ("meet"), in het midden. Een 2×2-afbeelding op 2×1 vakjes wordt dus niet
+    // platgedrukt maar kleiner getekend.
+    svgEl('image', {
+      href: url, x: -lw / 2, y: -lh / 2, width: lw, height: lh, preserveAspectRatio: 'xMidYMid meet',
+    }, el);
     return;
   }
 

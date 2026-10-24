@@ -68,6 +68,7 @@ describe('render', () => {
     expect(props[0].querySelector('text')?.textContent).toBe('hay');
     // crate: er staat een voorbeeld-afbeelding in src/tiles/props/
     expect(props[1].querySelector('image')?.getAttribute('href')).toBeTruthy();
+    expect(props[1].querySelector('image')?.getAttribute('preserveAspectRatio')).toBe('xMidYMid meet');
     // bed van 1×2 vakjes, kwartslag gedraaid: getekend als 2×1 vóór het draaien
     const bedRect = props[2].querySelector('rect.prop-placeholder')!;
     expect(Number(bedRect.getAttribute('width'))).toBeGreaterThan(Number(bedRect.getAttribute('height')));

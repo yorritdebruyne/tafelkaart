@@ -94,6 +94,8 @@ Klik in de app op **Laden → Testkaart (stal)** en controleer:
 - [ ] **Kopieer posities** → T2 staat er niet meer in, T3 wel.
 - [ ] Pagina herladen → de patch blijft toegepast.
 - [ ] Plak `voorbeelden/testpatch-stal.json` met `"map": "Grot"` → foutmelding, niets veranderd.
+- [ ] Sleep Akmenos tegen een muur of de dichte deur bij H7: hij stopt ervoor. Na de testpatch (deur open) mag hij erdoor.
+- [ ] Sleep Akmenos op Amara: hij blijft staan waar hij was. Sleep hem dóór Amara naar G9: dat mag.
 
 Iets mis? Noteer wat je deed, wat je verwachtte en wat er gebeurde (screenshot helpt) en geef het aan Claude.
 
@@ -109,6 +111,7 @@ src/
   state.ts       MapState: kaart + afgelegde weg per token (onveranderlijk)
   patch.ts       patches toepassen: applyPatch(state, json) -> nieuwe state + meldingen
   fog.ts         welke vakjes en tokens in de mist liggen
+  movement.ts    slepen: niet door muren of dichte deuren, niet eindigen op een ander token
   rules.ts       afstand (diagonaal = 1), meters, "Posities: ..."
   testmap.ts     de stal en de testpatch
   styles.css     opmaak, licht en donker thema
@@ -157,6 +160,9 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
 - **F10** props op een vakje of rechthoek, met `rot` in graden (met de klok mee).
 - **F11** fog of war: `regions` met `hidden` (standaard `true`). Speler-tokens blijven zichtbaar;
   vijanden en npc's in de mist worden niet getekend en niet gekopieerd.
+- Slepen: niet door muren, dichte deuren of ramen (open deuren en bogen wel), niet schuin tussen
+  twee muren door. Niet eindigen op een ander zichtbaar token; erdoor lopen mag. De DM kan via een
+  patch altijd alles verzetten.
 - Tegel-lader: afbeelding in `src/tiles/floor/` of `src/tiles/props/` → die wordt gebruikt,
   anders een reserve-tekening.
 - `terrain` en `lights` worden al aanvaard maar pas in M3 getekend (info-melding).

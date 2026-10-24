@@ -146,3 +146,20 @@ export function landingIndex(map: MapData, path: Cell[], size: number, selfId: s
   }
   return 0;
 }
+
+/**
+ * Hoekjes rechttrekken. Met de muis (of vinger) kom je bij een schuine beweging
+ * bijna altijd eerst op het vakje ernaast, waardoor de weg een hoekje maakt:
+ * 2 vakjes in plaats van 1. Is het eerste en laatste vakje van dat hoekje buren,
+ * en mag de schuine stap, dan laten we het middelste vakje weg.
+ */
+export function smoothCorner(b: Blockers, path: Cell[], size = 1): Cell[] {
+  const out = [...path];
+  while (out.length >= 3) {
+    const a = out[out.length - 3];
+    const c = out[out.length - 1];
+    if (chebyshev(a, c) !== 1 || !canStep(b, a, c, size)) break;
+    out.splice(out.length - 2, 1);
+  }
+  return out;
+}

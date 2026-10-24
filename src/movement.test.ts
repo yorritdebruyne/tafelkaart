@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseCell } from './coords';
-import { buildBlockers, canStep, isEnemyAt, isOccupied, landingIndex, stepsBetween } from './movement';
+import { buildBlockers, canStep, isEnemyAt, isOccupied, landingIndex, smoothCorner, stepsBetween } from './movement';
 import { applyPatch } from './patch';
 import { parseMapText } from './schema';
 import { createState } from './state';
@@ -83,5 +83,32 @@ describe('niet door vijanden', () => {
   it('vijand in de mist houdt niet tegen (anders verklapt het iets)', () => {
     const s = applyPatch(stal(), { type: 'patch', version: 1, map: 'Stal', tokens: { T5: { add: { side: 'enemy', cell: 'I7' } } } }).state;
     expect(isEnemyAt(s.map, c('I7'), 1, 'Ak')).toBe(false);
+  });
+});
+
+describe('hoekjes rechttrekken (schuin slepen)', () => {
+  const b = buildBlockers(stal().map);
+
+  it('E9 → E8 → D8 wordt E9 → D8 (1 vakje in plaats van 2)', () => {
+    expect(smoothCorner(b, [c('E9'), c('E8'), c('D8')])).toEqual([c('E9'), c('D8')]);
+  });
+
+  it('een lange trap van hoekjes wordt een schuine lijn', () => {
+    const trap = [c('B6'), c('C6'), c('C5'), c('D5')];
+    let path = [trap[0]];
+    for (const step of trap.slice(1)) path = smoothCorner(b, [...path, step]);
+    expect(path).toEqual([c('B6'), c('C5'), c('D5')]);
+  });
+
+  it('hoekje langs een muur: de schuine stap mag als het hoekje zelf mocht', () => {
+    // E9 → E8 → D8 gaat rond het einde van de staldeurmuur; schuin E9 → D8 mag dus ook.
+    expect(canStep(b, c('E9'), c('D8'))).toBe(true);
+    // Maar D9 → D8 kan niet, dus een "hoekje" D9 → D8 → ... ontstaat nooit.
+    expect(canStep(b, c('D9'), c('D8'))).toBe(false);
+  });
+
+  it('geen buren: niets veranderen', () => {
+    const path = [c('A1'), c('B1'), c('C1')];
+    expect(smoothCorner(b, path)).toEqual(path);
   });
 });

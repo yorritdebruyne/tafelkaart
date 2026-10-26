@@ -16,7 +16,8 @@ import { createState, type MapState } from '../state';
  */
 export const SAVE_FORMAT = 3;
 
-const STATE_KEY = 'tafelkaart.v1.state';
+/** Ook gebruikt om te merken dat een ander venster (bv. de tv) de kaart veranderde. */
+export const STATE_KEY = 'tafelkaart.v1.state';
 const THEME_KEY = 'tafelkaart.v1.theme';
 const PRINT_KEY = 'tafelkaart.v1.print';
 

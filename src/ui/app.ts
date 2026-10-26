@@ -23,8 +23,8 @@ import { copyText } from './clipboard';
 import { attachDrag } from './drag';
 import { readMapFromHash } from './hash';
 import {
-  loadLight, loadPrint, loadSfeer, loadState, loadTheme, savePrint, saveLight, saveSfeer, saveState, saveTheme,
-  type Theme,
+  STATE_KEY, loadLight, loadPrint, loadSfeer, loadState, loadTheme, savePrint, saveLight, saveSfeer, saveState,
+  saveTheme, type Theme,
 } from './storage';
 
 /** Wat het meldingenpaneel toont (van een kaart of van een patch). */
@@ -68,11 +68,15 @@ export class App {
   private readonly toast = $<HTMLElement>('toast');
   private readonly printDialog = $<HTMLDialogElement>('print-dialog');
   private readonly printRoot = $<HTMLElement>('print-root');
+  /** Tv-modus (F17): adres eindigt op ?tv. Alleen de kaart, zo groot mogelijk, geen knoppen. */
+  private readonly tv = new URLSearchParams(location.search).has('tv');
 
   start(): void {
     this.scroller.appendChild(this.view.svg);
     this.bindButtons();
-    this.applyTheme(loadTheme());
+    // Op de tv altijd donker (rustiger in een donkere kamer); niet bewaard.
+    this.applyTheme(this.tv ? 'dark' : loadTheme());
+    if (this.tv) this.startTv();
     this.initSfeer();
     this.applyLight(loadLight());
 
@@ -125,14 +129,30 @@ export class App {
     window.addEventListener('afterprint', () => this.printRoot.replaceChildren());
 
     window.addEventListener('hashchange', () => this.loadFromHash());
-    window.addEventListener('resize', () => this.applyZoom());
+    window.addEventListener('resize', () => (this.tv ? this.fitZoom() : this.applyZoom()));
+
+    // Een ander venster in dezelfde browser bewaarde een nieuwe toestand (bv. de pc-tab
+    // naast de tv-tab): overnemen. De browser stuurt dit "storage"-event alleen naar de
+    // ANDERE vensters, niet naar het venster dat zelf bewaarde.
+    window.addEventListener('storage', (e) => {
+      if (e.key !== STATE_KEY) return;
+      const saved = loadState();
+      if (!saved) return;
+      const fresh = saved.source !== this.source;
+      this.dialog.close();
+      if (fresh) this.toast.hidden = true; // "Nog geen kaart" mag weg
+      this.setState(saved.state, saved.source, fresh, false);
+    });
 
     // Eerst de bewaarde kaart terugzetten, daarna pas de hash: zo kan een
     // patch in de hash (#b64=...) op de bewaarde kaart toegepast worden.
     const saved = loadState();
     if (saved) this.setState(saved.state, saved.source, true);
     this.updateUndoButton();
-    if (!this.loadFromHash() && !saved) this.openDialog();
+    if (!this.loadFromHash() && !saved) {
+      if (this.tv) this.showToast('Nog geen kaart. Laad er een op een ander toestel, of druk L.', 8000);
+      else this.openDialog();
+    }
   }
 
   // ------------------------------------------------------------ laden
@@ -164,15 +184,16 @@ export class App {
     return true;
   }
 
-  private setState(state: MapState, source: string, fresh: boolean): void {
+  private setState(state: MapState, source: string, fresh: boolean, save = true): void {
     this.state = state;
     this.source = source;
-    this.selectedId = null;
+    // Zelfde kaart (een ander venster bewoog iets): de selectie mag blijven.
+    if (fresh || !this.selectedId || !getToken(state, this.selectedId)) this.selectedId = null;
     $<HTMLElement>('map-name').textContent = `${state.map.name} · ${state.map.cols}×${state.map.rows}`;
     renderMap(this.view, state, this.selectedId);
-    if (fresh) this.fitZoom();
+    if (fresh || this.tv) this.fitZoom();
     this.renderStatus();
-    this.save();
+    if (save) this.save();
   }
 
   /** F9: een patch toepassen op de geladen kaart. */
@@ -321,6 +342,35 @@ export class App {
     }
   }
 
+  // ------------------------------------------------------------ tv-modus (F17)
+
+  /**
+   * Tv: geen knoppen. Met de muis (of later de telefoon) sleep je gewoon zoals anders.
+   * Toetsen: F = volledig scherm, L = kaart laden, Ctrl+Z = ongedaan.
+   */
+  private startTv(): void {
+    document.body.classList.add('tv');
+    const hint = $<HTMLElement>('tv-hint');
+    hint.hidden = false;
+    const fullscreen = () => {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else void document.documentElement.requestFullscreen?.().catch(() => undefined);
+    };
+    hint.addEventListener('click', fullscreen);
+    document.addEventListener('fullscreenchange', () => {
+      hint.hidden = !!document.fullscreenElement;
+      // Na het wisselen is het scherm anders groot.
+      requestAnimationFrame(() => this.fitZoom());
+    });
+    window.setTimeout(() => (hint.hidden = true), 15000);
+    window.addEventListener('keydown', (e) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT') || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'f' || e.key === 'F') fullscreen();
+      else if (e.key === 'l' || e.key === 'L') this.openDialog();
+    });
+  }
+
   // ------------------------------------------------------------ afdrukken (F16)
 
   private bindPrint(): void {
@@ -406,6 +456,12 @@ export class App {
     if (!this.state) return;
     const { cols, rows } = this.state.map;
     const margin = GUTTER / S + 0.2;
+    if (this.tv) {
+      // Tv: de hele kaart past op het scherm, zo groot als het kan (geen scrollen).
+      const fit = Math.min(this.scroller.clientWidth / (cols + margin), this.scroller.clientHeight / (rows + margin));
+      this.cellPx = Math.max(8, Math.floor(fit));
+      return this.applyZoom();
+    }
     const availW = Math.max(200, this.scroller.clientWidth - 8);
     const availH = Math.max(300, window.innerHeight * 0.72);
     const fit = Math.min(availW / (cols + margin), availH / (rows + margin));

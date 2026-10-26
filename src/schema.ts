@@ -149,6 +149,24 @@ const COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 // "E" en "S" (Engels) aanvaarden we ook, voor het gemak.
 const SIDE_ALIASES: Record<string, EdgeSide> = { N: 'N', O: 'O', E: 'O', Z: 'Z', S: 'Z', W: 'W' };
 
+/**
+ * Tegelnamen netjes maken: "Rug", " rug", "weapon_rack" en "Weapon Rack" worden
+ * "rug" en "weapon-rack". Een paar gewone andere woorden wijzen naar een bestaande tegel.
+ */
+const PROP_ALIASES: Record<string, string> = {
+  carpet: 'rug', mat: 'rug', wardrobe: 'cupboard', closet: 'cupboard',
+  caravan: 'wagon', 'covered-wagon': 'wagon', 'weaponrack': 'weapon-rack',
+};
+
+/** Mogelijke spellingen van een tegelnaam, de letterlijke eerst. */
+export function tileSpellings(tile: string, kind?: 'props'): string[] {
+  const lower = tile.trim().toLowerCase();
+  const dashed = lower.replace(/[\s_]+/g, '-');
+  const out = [tile, lower, dashed];
+  if (kind === 'props' && PROP_ALIASES[dashed]) out.push(PROP_ALIASES[dashed]);
+  return [...new Set(out)];
+}
+
 /** Velden die we al aanvaarden maar pas later tekenen (nu niets meer). */
 const LATER: Record<string, string> = {};
 
@@ -259,6 +277,17 @@ export function parseMapObject(input: unknown): ParseResult {
 
   const size = `${cols}×${rows}`;
   const unknownTiles = new Set<string>();
+  const renamed = new Set<string>();
+  /** Tegelnaam netjes maken; meld één keer per naam als die veranderde (info voor de DM). */
+  const tileOf = (raw: string, where: string, known: Record<string, string>, kind?: 'floor' | 'props'): string => {
+    const spell = tileSpellings(raw, kind === 'props' ? 'props' : undefined);
+    const t = spell.find((x) => known[x] || (kind && hasTile(kind, x))) ?? spell[2] ?? spell[spell.length - 1];
+    if (t !== raw && !renamed.has(raw)) {
+      renamed.add(raw);
+      notes.push(`${where}: tegel "${raw}" gelezen als "${t}".`);
+    }
+    return t;
+  };
   const warnUnknownTile = (tile: string, where: string, known: Record<string, string>, kind?: 'floor' | 'props') => {
     // Bekend = er is een kleur in palette.ts, of een afbeelding in src/tiles/.
     if (known[tile] || (kind && hasTile(kind, tile)) || unknownTiles.has(tile)) return;
@@ -317,7 +346,8 @@ export function parseMapObject(input: unknown): ParseResult {
     const where = `floor[${i}]`;
     const res = FloorSchema.safeParse(raw);
     if (!res.success) return void errors.push(...issuesToText(where, res.error, raw));
-    const { tile, area, cell } = res.data;
+    const { area, cell } = res.data;
+    const tile = tileOf(res.data.tile, where, FLOOR, 'floor');
     const rect = rectOf(area, cell, where);
     if (!rect) return;
     warnUnknownTile(tile, where, FLOOR, 'floor');
@@ -338,8 +368,9 @@ export function parseMapObject(input: unknown): ParseResult {
         `${where}: onbekend punt [${bad[0]}, ${bad[1]}] (hoekpunten lopen van [0, 0] tot [${cols}, ${rows}])`,
       );
     }
-    warnUnknownTile(res.data.tile, where, WALL);
-    walls.push({ tile: res.data.tile, points: res.data.path });
+    const tile = tileOf(res.data.tile, where, WALL);
+    warnUnknownTile(tile, where, WALL);
+    walls.push({ tile, points: res.data.path });
   });
 
   // --- doors
@@ -356,8 +387,9 @@ export function parseMapObject(input: unknown): ParseResult {
     const id = res.data.id ?? `deur${i + 1}`;
     if (doorIds.has(id)) warnings.push(`${where}: id "${id}" bestaat al; patches vinden alleen de eerste.`);
     doorIds.add(id);
-    warnUnknownTile(res.data.tile, where, DOOR);
-    doors.push({ id, tile: res.data.tile, cell, side, state: res.data.state });
+    const tile = tileOf(res.data.tile, where, DOOR);
+    warnUnknownTile(tile, where, DOOR);
+    doors.push({ id, tile, cell, side, state: res.data.state });
   });
 
   // --- props
@@ -366,7 +398,8 @@ export function parseMapObject(input: unknown): ParseResult {
     const where = `props[${i}]`;
     const res = PropSchema.safeParse(raw);
     if (!res.success) return void errors.push(...issuesToText(where, res.error, raw));
-    const { tile, area, cell, rot } = res.data;
+    const { area, cell, rot } = res.data;
+    const tile = tileOf(res.data.tile, where, PROP, 'props');
     const rect = rectOf(area, cell, where);
     if (!rect) return;
     warnUnknownTile(tile, where, PROP, 'props');

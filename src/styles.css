@@ -295,3 +295,6 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
   font-weight: 600;
 }
 button:disabled { opacity: 0.45; cursor: default; }
+/* In een kast of huifkar: half doorzichtig, je ziet de kast er nog door. */
+.token.inside { opacity: 0.6; }
+.token.inside .token-body { stroke-dasharray: 10 6; }

@@ -5,7 +5,8 @@
 //     ondiep of diep water (waden of zwemmen);
 //   - je klimt: een ladder;
 //   - er een ander wezen staat (je mag door een bondgenoot, dat is moeilijk terrein);
-//   - je kruipt (conditie "prone").
+//   - je kruipt (conditie "prone");
+//   - je kruipt of klimt in een kast of huifkar (ENTER_PROPS; daar mag je ook op eindigen).
 // Die extra's tellen op (kruipen door moeilijk terrein = 3 per vakje), behalve
 // moeilijk terrein met zichzelf: twee keer moeilijk is nog altijd +1.
 //
@@ -18,13 +19,17 @@ import { isCellHidden } from './fog';
 import { buildBlockers, cellKey } from './movement';
 import { layoutCells, propLayout } from './props-layout';
 import type { MapData } from './schema';
-import { CLIMB_PROPS, DIFFICULT_FLOORS, DIFFICULT_PROPS } from './tiles/palette';
+import type { Cell } from './coords';
+import type { TokenItem } from './schema';
+import { CLIMB_PROPS, DIFFICULT_FLOORS, DIFFICULT_PROPS, ENTER_PROPS } from './tiles/palette';
 
 export interface TerrainInfo {
   /** Moeilijk terrein (zichtbare vakjes). */
   difficult: Set<string>;
   /** Klimmen (ladder). */
   climb: Set<string>;
+  /** Vakjes van een kast of huifkar -> waarin ("de kast"). */
+  enter: Map<string, string>;
 }
 
 let cache = new WeakMap<MapData, TerrainInfo>();
@@ -67,7 +72,30 @@ export function terrainInfo(map: MapData): TerrainInfo {
     for (const [c, r] of layoutCells(propLayout(p, walls))) add(set, c, r);
   }
 
-  const info = { difficult, climb };
+  const enter = new Map<string, string>();
+  for (const p of map.props) {
+    const name = ENTER_PROPS[p.tile];
+    if (!name) continue;
+    for (const [c, r] of layoutCells(propLayout(p, walls))) {
+      if (c < 0 || r < 0 || c >= map.cols || r >= map.rows || isCellHidden(map, { c, r })) continue;
+      enter.set(cellKey(c, r), name);
+    }
+  }
+
+  const info = { difficult, climb, enter };
   cache.set(map, info);
   return info;
+}
+
+/** Zit een token (deels) in een kast of huifkar? Geeft bv. "de kast", anders undefined. */
+export function insideOf(map: MapData, t: TokenItem | { cell: Cell; size: number }): string | undefined {
+  const { enter } = terrainInfo(map);
+  if (!enter.size) return undefined;
+  for (let r = 0; r < t.size; r++) {
+    for (let c = 0; c < t.size; c++) {
+      const name = enter.get(cellKey(t.cell.c + c, t.cell.r + r));
+      if (name) return name;
+    }
+  }
+  return undefined;
 }

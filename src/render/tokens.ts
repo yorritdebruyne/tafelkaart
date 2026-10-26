@@ -3,6 +3,7 @@ import { isTokenHidden } from '../fog';
 import { isOverSpeed, pathCost } from '../rules';
 import type { TokenItem } from '../schema';
 import { getPath, type MapState } from '../state';
+import { insideOf } from '../terrain';
 import { SIDE } from '../tiles/palette';
 import { S, svgEl } from './svg';
 
@@ -29,7 +30,7 @@ export function renderTokens(
     const parent = t.side === 'player' ? players : g;
     const el = svgEl('g', {
       transform: `translate(${t.cell.c * S} ${t.cell.r * S})`,
-      class: `token token-${t.side}${t.side === 'player' ? ' draggable' : ''}${t.id === selectedId ? ' selected' : ''}`,
+      class: `token token-${t.side}${t.side === 'player' ? ' draggable' : ''}${t.id === selectedId ? ' selected' : ''}${insideOf(state.map, t) ? ' inside' : ''}`,
       'data-token': t.id,
     }, parent);
     const half = (t.size * S) / 2;

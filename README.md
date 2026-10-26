@@ -211,6 +211,15 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
 - **F15 undo**: tot 50 stappen terug (niet over het laden van een nieuwe kaart heen). *Nieuwe beurt* bestond al.
 - Hint voor de DM: wie het bereik van een zichtbare vijand verlaat, krijgt "opportunity attack?".
 
+## 5b-ter. Na de testfase
+
+- Tegelnamen: `"Rug"`, `"Weapon_Rack"` of `"carpet"` (als prop) worden `rug`, `weapon-rack`, `rug`
+  (info-melding). Zo valt een hoofdletter van de DM niet meer terug op een grijs vakje.
+- `wagon` = huifkar (FA `Wagon_Wood_*` met huif, 3×6). `cart` op een groot vak (3×6 of 2×5) wordt een
+  open wagen, op 2×3 een handkar. Na het mergen: `npm run fa-index`.
+- In een kast of huifkar kruipen (`ENTER_PROPS`): kost 1 extra, het token wordt half doorzichtig en
+  *Kopieer posities* zegt bv. `Amara: B1 (in de kast)`.
+
 ## 5c. Forgotten Adventures (eenmalig instellen)
 
 De app kan de gratis **Core Mapmaking Pack** van Forgotten Adventures gebruiken, rechtstreeks uit je

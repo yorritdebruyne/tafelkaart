@@ -99,3 +99,10 @@ export function layoutCells(l: PropLayout): [number, number][] {
   for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) out.push([c, r]);
   return out;
 }
+
+/** Midden van de tekening van een prop (na draaien), in SVG-eenheden. */
+export function layoutCenter(l: PropLayout): { x: number; y: number } {
+  const a = (l.rot * Math.PI) / 180;
+  const mx = l.box.x + l.box.w / 2, my = l.box.y + l.box.h / 2;
+  return { x: l.cx + mx * Math.cos(a) - my * Math.sin(a), y: l.cy + mx * Math.sin(a) + my * Math.cos(a) };
+}

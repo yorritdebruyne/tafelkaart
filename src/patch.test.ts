@@ -23,7 +23,7 @@ describe('patch', () => {
     expect(map.doors[0].state).toBe('open');
     expect(map.regions[0].hidden).toBe(false);
     expect(res.changes).toEqual([
-      'T1 → C3', 'T2 weg', 'T3 erbij op G7', 'Akmenos: prone', 'deur zadel open', 'zadelkamer zichtbaar',
+      'T1 → C3', 'T2 weg', 'T3 erbij op G7', 'Akmenos: liggend', 'deur zadel open', 'zadelkamer zichtbaar',
     ]);
     // De oude state is niet veranderd (belangrijk voor undo in M3).
     expect(before.map.tokens).toHaveLength(5);

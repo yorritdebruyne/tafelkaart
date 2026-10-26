@@ -5,9 +5,13 @@ import { formatCell } from '../coords';
 import { GUTTER, createMapView, mapExtent, renderMap, renderMoving, type MapView } from '../render';
 import { S } from '../render/svg';
 import { renderPaths, updateBadge } from '../render/tokens';
+import { conditionLabel, effectiveSpeed, speedZeroBy } from '../conditions';
 import { visibleTokens } from '../fog';
+import type { LightMode } from '../light';
+import { getLightMode, setLightMode } from '../render/light';
+import { clearTerrainCache } from '../terrain';
 import { applyPatch } from '../patch';
-import { isOverSpeed, pathLength, positionsText, squaresToMeters } from '../rules';
+import { isOverSpeed, leftReach, pathCost, pathLength, positionsText, squaresToMeters } from '../rules';
 import { parseJsonLenient, parseMapText } from '../schema';
 import { createState, getPath, getToken, moveToken, newTurn, toggleDoor, type MapState } from '../state';
 import { TEST_MAP, TEST_PATCH, TEST_VILLAGE } from '../testmap';
@@ -16,7 +20,9 @@ import { SIDE } from '../tiles/palette';
 import { copyText } from './clipboard';
 import { attachDrag } from './drag';
 import { readMapFromHash } from './hash';
-import { loadSfeer, loadState, loadTheme, saveSfeer, saveState, saveTheme, type Theme } from './storage';
+import {
+  loadLight, loadSfeer, loadState, loadTheme, saveLight, saveSfeer, saveState, saveTheme, type Theme,
+} from './storage';
 
 /** Wat het meldingenpaneel toont (van een kaart of van een patch). */
 interface Messages {
@@ -26,6 +32,9 @@ interface Messages {
 }
 
 const MIN_CELL_PX = 16;
+/** Hoeveel stappen je terug kan (F15). */
+const UNDO_MAX = 50;
+const SIDE_NL = { player: 'speler', enemy: 'vijand', npc: 'npc' } as const;
 const MAX_CELL_PX = 200;
 
 function $<T extends HTMLElement>(id: string): T {
@@ -41,6 +50,8 @@ export class App {
   private cellPx = 40;
   private theme: Theme = 'auto';
   private toastTimer = 0;
+  /** Undo-stapel (F15): vorige toestanden, met een korte beschrijving van wat erna gebeurde. */
+  private history: { state: MapState; label: string }[] = [];
 
   private readonly view: MapView = createMapView();
   private readonly scroller = $<HTMLElement>('map-scroller');
@@ -56,6 +67,7 @@ export class App {
     this.bindButtons();
     this.applyTheme(loadTheme());
     this.initSfeer();
+    this.applyLight(loadLight());
 
     attachDrag({
       svg: this.view.svg,
@@ -80,11 +92,23 @@ export class App {
         if (d?.state === 'locked') this.showToast('Deze deur is op slot. Alleen de DM kan ze openen.');
         return;
       }
+      const what = `deur ${id} ${next.doorNotes?.[id] === 'open' ? 'open' : 'dicht'}`;
+      this.remember(what);
       this.state = next;
       renderMap(this.view, this.state, this.selectedId);
       this.renderStatus();
       this.save();
-      this.showToast(`Deur ${id} ${next.doorNotes?.[id] === 'open' ? 'open' : 'dicht'}.`);
+      this.showToast(`${what[0].toUpperCase()}${what.slice(1)}.`);
+    });
+
+    // Ctrl+Z (of Cmd+Z op een Mac): ongedaan maken, behalve als je in het tekstvak typt.
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        const t = e.target as HTMLElement | null;
+        if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT')) return;
+        e.preventDefault();
+        this.undo();
+      }
     });
 
     window.addEventListener('hashchange', () => this.loadFromHash());
@@ -94,6 +118,7 @@ export class App {
     // patch in de hash (#b64=...) op de bewaarde kaart toegepast worden.
     const saved = loadState();
     if (saved) this.setState(saved.state, saved.source, true);
+    this.updateUndoButton();
     if (!this.loadFromHash() && !saved) this.openDialog();
   }
 
@@ -119,6 +144,9 @@ export class App {
       return false;
     }
     this.dialogErrors.replaceChildren();
+    // Nieuwe kaart: de undo-stapel hoort bij de oude kaart.
+    this.history = [];
+    this.updateUndoButton();
     this.setState(createState(res.map), text, true);
     return true;
   }
@@ -151,6 +179,7 @@ export class App {
       return false;
     }
     this.dialogErrors.replaceChildren();
+    this.remember('patch');
     this.state = res.state;
     if (this.selectedId && !getToken(this.state, this.selectedId)) this.selectedId = null;
     renderMap(this.view, this.state, this.selectedId); // alles: deuren en mist kunnen veranderd zijn
@@ -173,12 +202,13 @@ export class App {
     renderPaths(this.view.layers.path, temp);
     const el = this.view.tokenEls.get(id);
     const token = getToken(temp, id);
-    if (el && token) updateBadge(el, token, pathLength(path));
+    if (el && token) updateBadge(el, token, pathCost(temp.map, token, path));
     this.renderStatus(temp, id);
   }
 
   private commit(id: string, path: Cell[]): void {
     if (!this.state) return;
+    this.remember(`${getToken(this.state, id)?.name ?? id} verplaatst`);
     this.state = moveToken(this.state, id, path);
     this.selectedId = id;
     this.redrawMoving();
@@ -203,10 +233,19 @@ export class App {
     $('btn-copy').addEventListener('click', () => void this.copyPositions());
     $('btn-turn').addEventListener('click', () => {
       if (!this.state) return;
+      this.remember('nieuwe beurt');
       this.state = newTurn(this.state);
       this.redrawMoving();
       this.save();
       this.showToast('Nieuwe beurt: tellers op 0.');
+    });
+    $('btn-undo').addEventListener('click', () => this.undo());
+    $('btn-light').addEventListener('click', () => {
+      const order: LightMode[] = ['auto', 'aan', 'uit'];
+      const next = order[(order.indexOf(getLightMode()) + 1) % order.length];
+      this.applyLight(next);
+      saveLight(next);
+      if (this.state) renderMap(this.view, this.state, this.selectedId);
     });
     $('btn-zoom-in').addEventListener('click', () => this.zoom(1.25));
     $('btn-zoom-out').addEventListener('click', () => this.zoom(1 / 1.25));
@@ -244,6 +283,7 @@ export class App {
     this.status.addEventListener('click', (e) => {
       const btn = (e.target as Element).closest<HTMLElement>('[data-reset]');
       if (!btn || !this.state) return;
+      this.remember(`nieuwe beurt voor ${getToken(this.state, btn.dataset.reset!)?.name ?? btn.dataset.reset}`);
       this.state = newTurn(this.state, btn.dataset.reset);
       this.redrawMoving();
       this.save();
@@ -305,9 +345,50 @@ export class App {
       const next = names[(names.indexOf(getSfeer()) + 1) % names.length];
       setSfeer(next);
       saveSfeer(next);
+      clearTerrainCache(); // props kunnen een andere grootte hebben
       btn.textContent = `Sfeer: ${next}`;
       if (this.state) renderMap(this.view, this.state, this.selectedId);
     });
+  }
+
+  // ------------------------------------------------------------ undo (F15)
+
+  /** Bewaar de huidige toestand vóór een wijziging. `label` = wat er nu gaat gebeuren. */
+  private remember(label: string): void {
+    if (!this.state) return;
+    this.history.push({ state: this.state, label });
+    if (this.history.length > UNDO_MAX) this.history.shift();
+    this.updateUndoButton();
+  }
+
+  private undo(): void {
+    const last = this.history.pop();
+    this.updateUndoButton();
+    if (!last) return this.showToast('Niets om ongedaan te maken.');
+    this.state = last.state;
+    if (this.selectedId && !getToken(this.state, this.selectedId)) this.selectedId = null;
+    // Alles opnieuw: deuren, mist en licht kunnen terug veranderd zijn.
+    renderMap(this.view, this.state, this.selectedId);
+    this.renderStatus();
+    this.save();
+    this.showToast(`Ongedaan: ${last.label}.`);
+  }
+
+  private updateUndoButton(): void {
+    const btn = $<HTMLButtonElement>('btn-undo');
+    btn.disabled = this.history.length === 0;
+    btn.title = this.history.length
+      ? `Ongedaan maken: ${this.history[this.history.length - 1].label} (Ctrl+Z)`
+      : 'Niets om ongedaan te maken';
+  }
+
+  private applyLight(m: LightMode): void {
+    setLightMode(m);
+    const btn = $('btn-light');
+    btn.textContent = `Licht: ${m}`;
+    btn.title = m === 'auto'
+      ? 'Donker zodra de DM lichtbronnen in de kaart zet'
+      : m === 'aan' ? 'Altijd donker met licht rond de bronnen' : 'Geen donker en geen licht (dag)';
   }
 
   private applyTheme(theme: Theme): void {
@@ -322,8 +403,11 @@ export class App {
   private renderStatus(state = this.state, activeId?: string): void {
     if (!state) return this.status.replaceChildren();
     const rows = state.map.tokens.filter((t) => t.side === 'player').map((t) => {
-      const used = pathLength(getPath(state, t.id));
+      const path = getPath(state, t.id);
+      const used = pathCost(state.map, t, path);
+      const dist = pathLength(path);
       const over = isOverSpeed(t, used);
+      const speedNum = effectiveSpeed(t);
       const li = document.createElement('li');
       li.className = `${over ? 'over' : ''}${t.id === (activeId ?? this.selectedId) ? ' active' : ''}`;
       const dot = document.createElement('span');
@@ -331,11 +415,19 @@ export class App {
       dot.style.background = SIDE[t.side];
       const name = document.createElement('span');
       name.className = 'name';
-      name.textContent = `${t.name} · ${formatCell(t.cell)}`;
+      const conds = t.conditions?.length ? ` (${t.conditions.map(conditionLabel).join(', ')})` : '';
+      name.textContent = `${t.name} · ${formatCell(t.cell)}${conds}`;
       const move = document.createElement('span');
       move.className = 'move';
-      const speed = t.speed !== undefined ? `/${t.speed}` : '';
-      move.textContent = `${used}${speed} vakjes · ${squaresToMeters(used)}${over ? ` · ${used - t.speed!} te veel!` : ''}`;
+      const speed = speedNum !== undefined ? `/${speedNum}` : '';
+      const parts = [`${used}${speed} vakjes · ${squaresToMeters(used)}`];
+      if (used !== dist) parts.push(`${dist} ver, ${used - dist} extra`);
+      const zero = speedZeroBy(t);
+      if (zero) parts.push(`speed 0 (${conditionLabel(zero)})`);
+      if (over && speedNum !== undefined && !zero) parts.push(`${used - speedNum} te veel!`);
+      const left = leftReach(state.map, t, path);
+      if (left.length) parts.push(`verlaat ${left.join(', ')}: opportunity attack?`);
+      move.textContent = parts.join(' · ');
       const reset = document.createElement('button');
       reset.type = 'button';
       reset.className = 'small';
@@ -353,7 +445,16 @@ export class App {
     hint.textContent = rows.length
       ? `Sleep een blauw token. Terugslepen telt terug.${others ? ` ${others} andere token(s) bewegen via de DM.` : ''}`
       : 'Geen speler-tokens op deze kaart.';
-    this.status.replaceChildren(ul, hint);
+    const sel = this.selectedId ? getToken(state, this.selectedId) : undefined;
+    const info: HTMLElement[] = [];
+    if (sel && sel.side !== 'player') {
+      const p = document.createElement('p');
+      p.className = 'selected-info';
+      const conds = sel.conditions?.length ? ` · ${sel.conditions.map(conditionLabel).join(', ')}` : '';
+      p.textContent = `${sel.name} · ${SIDE_NL[sel.side]} · ${formatCell(sel.cell)}${conds}`;
+      info.push(p);
+    }
+    this.status.replaceChildren(ul, ...info, hint);
   }
 
   private showMessages(res: Messages, what: 'Kaart' | 'Patch'): void {

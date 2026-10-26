@@ -1,4 +1,4 @@
-# Tafelkaart (M2 – Mooi, in opbouw)
+# Tafelkaart (M3 – Slim)
 
 Statische web-app die een D&D-kaart tekent uit JSON van de DM. Spelers slepen hun token,
 de app telt de afstand en kopieert de posities terug voor de chat. Tijdens het spel stuurt de DM
@@ -98,6 +98,20 @@ Klik in de app op **Laden → Testkaart (stal)** en controleer:
 - [ ] Pagina herladen → de patch blijft toegepast.
 - [ ] Plak `voorbeelden/testpatch-stal.json` met `"map": "Grot"` → foutmelding, niets veranderd.
 - [ ] Sleep Akmenos tegen een muur of de dichte deur bij H7: hij stopt ervoor. Na de testpatch (deur open) mag hij erdoor.
+
+**M3 (nieuw)** – laad opnieuw de testkaart (stal):
+
+- [ ] De stal is donker; rond E9 schijnt paars licht naar binnen door de opening, met schaduwen
+      van de muren. De zadelkamer blijft donker tot de deur opengaat (testpatch).
+- [ ] **Licht: auto / aan / uit**: auto = donker zodra de kaart `lights` heeft. In het dorp op *aan*:
+      haarden en de lantaarn geven vanzelf licht, de muren houden het tegen, ramen niet.
+- [ ] Bij het hooi (A1:B1, A2) staan schuine streepjes: moeilijk terrein. Sleep Amara via B1 naar A1:
+      telt 2 per vakje, onderaan staat "… ver, … extra".
+- [ ] Sleep Akmenos door Amara heen: dat vakje telt dubbel (door een bondgenoot = moeilijk terrein).
+- [ ] Na de **testpatch**: Akmenos heeft een geel labeltje "liggend" en elk vakje kost 1 extra (kruipen).
+- [ ] Sleep Amara naast T2 en daarna weer weg → onderaan "verlaat T2: opportunity attack?".
+- [ ] Tik op een vijand → onderaan zijn naam, plek en condities.
+- [ ] **↶ Ongedaan** (of Ctrl+Z) zet de laatste stap terug: slepen, deur, patch of nieuwe beurt.
 - [ ] Sleep Akmenos op Amara: hij blijft staan waar hij was. Sleep hem dóór Amara naar G9: dat mag.
 - [ ] Sleep Akmenos dóór een vijand (T1 of T2): hij stopt ervoor.
 - [ ] Sleep Akmenos één vakje schuin, ook een beetje slordig: de teller zegt 1, niet 2.
@@ -166,8 +180,8 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
 - **Deuren zelf openen:** tik op een gewone deur of poort om ze te openen of te sluiten (niet op slot).
   *Kopieer posities* meldt het aan de DM tot de volgende *Nieuwe beurt*.
 - **F9** patches: plak een patch in hetzelfde venster als een kaart (of via de URL-hash).
-  Tokens verplaatsen (`cell`), toevoegen (`add`), weghalen (`remove`), condities zetten (`conditions`,
-  getoond vanaf M3), deuren (`state`) en verborgen regio's tonen (`reveal`).
+  Tokens verplaatsen (`cell`), toevoegen (`add`), weghalen (`remove`), condities zetten (`conditions`),
+  deuren (`state`) en verborgen regio's tonen (`reveal`).
   Fout item → melding, de rest wordt toegepast. Patch voor een andere kaart → geweigerd.
   Dezelfde patch twee keer → de tweede keer gebeurt er niets.
 - **F10** props op een vakje of rechthoek, met `rot` in graden (met de klok mee).
@@ -181,7 +195,21 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
 - Tegel-lader: afbeelding in `src/tiles/prive/…` (niet op GitHub), dan `src/tiles/floor/` of
   `src/tiles/props/` → die wordt gebruikt, anders een reserve-tekening. Afbeeldingen worden apart
   geladen, dus grote PNG's maken de app niet traag.
-- `terrain` en `lights` worden al aanvaard maar pas in M3 getekend (info-melding).
+
+## 5b-bis. Wat M3 doet
+
+- **F12 moeilijk terrein**: `terrain` met `"kind": "difficult"` (streepjes). Elk vakje waar je op stapt
+  kost 1 extra. Vanzelf moeilijk: puin, struiken, ondiep en diep water, en door een ander token lopen.
+  Ladder = klimmen (+1). Liggend = kruipen (+1). Extra's tellen op; mist kost nooit extra.
+  Lijsten: `DIFFICULT_PROPS`, `DIFFICULT_FLOORS`, `CLIMB_PROPS` in `palette.ts`.
+- **F13 licht**: `lights` (`cell`, `radius` = heldere straal, `color`). Daarbuiten nog eens zoveel
+  schemer. Kaars, lantaarn, vuurkorf, kampvuur en haard geven vanzelf licht (`PROP_LIGHTS`), tenzij de
+  DM er zelf een licht op zet. Licht stopt aan muren, dichte deuren en de kaartrand; ramen, bogen en
+  open deuren laten het door. Bronnen in de mist schijnen niet. Hoe donker: `LIGHT` in `palette.ts`.
+- **F14 condities**: geel labeltje op het token (eerste conditie in het Nederlands, "+2" als er meer
+  zijn). Vastgegrepen, in bedwang, verlamd, versteend en bewusteloos = speed 0. Mogen ook al in de kaart.
+- **F15 undo**: tot 50 stappen terug (niet over het laden van een nieuwe kaart heen). *Nieuwe beurt* bestond al.
+- Hint voor de DM: wie het bereik van een zichtbare vijand verlaat, krijgt "opportunity attack?".
 
 ## 5c. Forgotten Adventures (eenmalig instellen)
 

@@ -1,16 +1,17 @@
 // De kaart als één <svg> met een <g> (groep) per laag.
 // Volgorde = tekenvolgorde: wat later komt, ligt bovenop.
 // Speler-tokens liggen boven de mist: je ziet altijd waar je eigen personage staat.
-// Lagen die nog leeg zijn (terrain, light) vullen we in M3.
 
 import type { MapState } from '../state';
 import { renderFloor } from './floor';
 import { renderFog } from './fog';
 import { renderGrid, renderLabels } from './grid';
+import { renderLight } from './light';
 import { renderProps } from './props';
 import { SHADOW, TOKEN } from '../tiles/palette';
 import { renderDecor } from './decor';
 import { S, svgEl } from './svg';
+import { renderTerrain } from './terrain';
 import { renderPaths, renderTokens } from './tokens';
 import { renderWalls } from './walls';
 
@@ -69,8 +70,10 @@ export function renderMap(view: MapView, state: MapState, selectedId: string | n
   renderFloor(view.layers.floor, map);
   renderDecor(view.layers.decor, map);
   renderGrid(view.layers.grid, map);
+  renderTerrain(view.layers.terrain, map);
   renderProps(view.layers.props, map);
   renderWalls(view.layers.walls, map);
+  renderLight(view.layers.light, map);
   renderFog(view.layers.fog, map);
   renderMoving(view, state, selectedId);
 }

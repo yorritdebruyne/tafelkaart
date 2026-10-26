@@ -1,5 +1,6 @@
+import { conditionLabel, effectiveSpeed } from '../conditions';
 import { isTokenHidden } from '../fog';
-import { isOverSpeed, pathLength } from '../rules';
+import { isOverSpeed, pathCost } from '../rules';
 import type { TokenItem } from '../schema';
 import { getPath, type MapState } from '../state';
 import { SIDE } from '../tiles/palette';
@@ -46,13 +47,16 @@ export function renderTokens(
     }, el);
     label.textContent = t.id;
     const title = svgEl('title', {}, el);
-    title.textContent = t.name;
+    title.textContent = t.conditions?.length
+      ? `${t.name} (${t.conditions.map(conditionLabel).join(', ')})`
+      : t.name;
+    if (t.conditions?.length) renderConditions(el, t);
 
     if (t.side === 'player') {
       const badge = svgEl('g', { class: 'badge', transform: `translate(${t.size * S - 2} ${t.size * S - 2})` }, el);
       svgEl('rect', { x: -34, y: -18, width: 34, height: 18, rx: 6 }, badge);
       svgEl('text', { x: -17, y: -9 }, badge);
-      updateBadge(el, t, pathLength(getPath(state, t.id)));
+      updateBadge(el, t, pathCost(state.map, t, getPath(state, t.id)));
     }
     els.set(t.id, el);
   }
@@ -69,11 +73,28 @@ export function updateBadge(el: SVGGElement, token: TokenItem, used: number): vo
   const badge = el.querySelector<SVGGElement>('.badge');
   if (!badge) return;
   const text = badge.querySelector('text')!;
-  text.textContent = token.speed !== undefined ? `${used}/${token.speed}` : String(used);
+  const speed = effectiveSpeed(token);
+  text.textContent = speed !== undefined ? `${used}/${speed}` : String(used);
   badge.style.display = used > 0 ? '' : 'none';
   const over = isOverSpeed(token, used);
   badge.classList.toggle('over', over);
   el.classList.toggle('over', over);
+}
+
+/**
+ * Condities (F14): een geel labeltje bovenaan het token, met de eerste conditie
+ * in het Nederlands en "+2" als er meer zijn. De volledige lijst staat in de tooltip
+ * en onderaan bij het gekozen token.
+ */
+function renderConditions(el: SVGGElement, t: TokenItem): void {
+  const list = t.conditions!;
+  const text = `${conditionLabel(list[0])}${list.length > 1 ? ` +${list.length - 1}` : ''}`;
+  const fs = S * 0.24;
+  const w = Math.min(t.size * S + S * 0.3, text.length * fs * 0.58 + fs * 0.9);
+  const g = svgEl('g', { class: 'conditions', transform: `translate(${(t.size * S) / 2} ${S * 0.02})` }, el);
+  svgEl('rect', { x: -w / 2, y: -fs * 0.75, width: w, height: fs * 1.5, rx: fs * 0.5 }, g);
+  const label = svgEl('text', { x: 0, y: 0, 'font-size': fs }, g);
+  label.textContent = text;
 }
 
 /** Stippellijn van de afgelegde weg sinds het begin van de beurt. */

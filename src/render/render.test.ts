@@ -14,6 +14,19 @@ describe('render', () => {
     setSfeer('standaard');
   });
 
+  it('M3: arcering, donker met licht en een conditie-labeltje in de stal', () => {
+    const view = createMapView();
+    let state = createState(parseMapText(TEST_MAP).map!);
+    renderMap(view, state, null);
+    expect(view.layers.terrain.querySelectorAll('path.terrain-difficult')).toHaveLength(1);
+    expect(view.layers.light.querySelectorAll('rect.light-dark')).toHaveLength(1);
+    // Eén licht van de DM; het licht van de zadelkamer zit niet in de mist.
+    expect(view.layers.light.querySelectorAll('.light-glow circle')).toHaveLength(1);
+    state = applyPatch(state, JSON.parse(TEST_PATCH)).state;
+    renderMap(view, state, null);
+    expect(view.tokenEls.get('Ak')?.querySelector('.conditions text')?.textContent).toBe('liggend');
+  });
+
   it('tekent de stal: 5 tokens, 6 muren, 1 deur', () => {
     const view = createMapView();
     renderMap(view, createState(parseMapText(TEST_MAP).map!), null);

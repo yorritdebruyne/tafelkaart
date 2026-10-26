@@ -2,6 +2,7 @@
 // fout gooien, dus alles zit in try/catch en de app werkt ook zonder.
 
 import { cellInBounds } from '../coords';
+import type { LightMode } from '../light';
 import { parseMapText } from '../schema';
 import { createState, type MapState } from '../state';
 
@@ -10,8 +11,9 @@ import { createState, type MapState } from '../state';
  * leest dan vroeger: dan wordt een oude bewaarde kaart opnieuw ingelezen.
  *   1 (of ontbrekend) = M1: zonder props en regions
  *   2 = M2
+ *   3 = M3: met terrain, lights en condities uit de kaart
  */
-export const SAVE_FORMAT = 2;
+export const SAVE_FORMAT = 3;
 
 const STATE_KEY = 'tafelkaart.v1.state';
 const THEME_KEY = 'tafelkaart.v1.theme';
@@ -86,6 +88,26 @@ export function loadSfeer(): string | null {
     return localStorage.getItem(SFEER_KEY);
   } catch {
     return null;
+  }
+}
+
+const LIGHT_KEY = 'tafelkaart.v1.light';
+
+/** Licht-knop (F13): auto, aan of uit. */
+export function saveLight(mode: LightMode): void {
+  try {
+    localStorage.setItem(LIGHT_KEY, mode);
+  } catch {
+    /* geen opslag beschikbaar */
+  }
+}
+
+export function loadLight(): LightMode {
+  try {
+    const m = localStorage.getItem(LIGHT_KEY);
+    return m === 'aan' || m === 'uit' ? m : 'auto';
+  } catch {
+    return 'auto';
   }
 }
 

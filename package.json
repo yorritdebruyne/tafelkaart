@@ -1,8 +1,8 @@
 {
   "name": "tafelkaart",
   "private": true,
-  "version": "0.3.0",
-  "description": "Kleine statische web-app die D&D-kaarten tekent uit JSON (M3 - Slim)",
+  "version": "0.4.0",
+  "description": "Kleine statische web-app die D&D-kaarten tekent uit JSON (M4 - Fysiek)",
   "type": "module",
   "scripts": {
     "dev": "vite",

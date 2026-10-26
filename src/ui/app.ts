@@ -12,6 +12,8 @@ import { getLightMode, setLightMode } from '../render/light';
 import { clearTerrainCache, insideOf } from '../terrain';
 import { applyPatch } from '../patch';
 import { isOverSpeed, leftReach, pathCost, pathLength, positionsText, squaresToMeters } from '../rules';
+import { planSummary } from '../print/layout';
+import { buildPrint, printPlans, waitForImages, type PrintOptions } from '../print/sheets';
 import { parseJsonLenient, parseMapText } from '../schema';
 import { createState, getPath, getToken, moveToken, newTurn, toggleDoor, type MapState } from '../state';
 import { TEST_MAP, TEST_PATCH, TEST_VILLAGE } from '../testmap';
@@ -21,7 +23,8 @@ import { copyText } from './clipboard';
 import { attachDrag } from './drag';
 import { readMapFromHash } from './hash';
 import {
-  loadLight, loadSfeer, loadState, loadTheme, saveLight, saveSfeer, saveState, saveTheme, type Theme,
+  loadLight, loadPrint, loadSfeer, loadState, loadTheme, savePrint, saveLight, saveSfeer, saveState, saveTheme,
+  type Theme,
 } from './storage';
 
 /** Wat het meldingenpaneel toont (van een kaart of van een patch). */
@@ -52,6 +55,8 @@ export class App {
   private toastTimer = 0;
   /** Undo-stapel (F15): vorige toestanden, met een korte beschrijving van wat erna gebeurde. */
   private history: { state: MapState; label: string }[] = [];
+  /** Printinstellingen (F16), bewaard tussen sessies. */
+  private printOpts: PrintOptions = loadPrint();
 
   private readonly view: MapView = createMapView();
   private readonly scroller = $<HTMLElement>('map-scroller');
@@ -61,6 +66,8 @@ export class App {
   private readonly input = $<HTMLTextAreaElement>('map-input');
   private readonly dialogErrors = $<HTMLElement>('dialog-errors');
   private readonly toast = $<HTMLElement>('toast');
+  private readonly printDialog = $<HTMLDialogElement>('print-dialog');
+  private readonly printRoot = $<HTMLElement>('print-root');
 
   start(): void {
     this.scroller.appendChild(this.view.svg);
@@ -110,6 +117,12 @@ export class App {
         this.undo();
       }
     });
+
+    // Ctrl+P zonder de knop: dan bouwen we de bladen nog snel met de bewaarde instellingen.
+    window.addEventListener('beforeprint', () => {
+      if (!this.printRoot.childElementCount) this.buildPrintSheets();
+    });
+    window.addEventListener('afterprint', () => this.printRoot.replaceChildren());
 
     window.addEventListener('hashchange', () => this.loadFromHash());
     window.addEventListener('resize', () => this.applyZoom());
@@ -240,6 +253,7 @@ export class App {
       this.showToast('Nieuwe beurt: tellers op 0.');
     });
     $('btn-undo').addEventListener('click', () => this.undo());
+    this.bindPrint();
     $('btn-light').addEventListener('click', () => {
       const order: LightMode[] = ['auto', 'aan', 'uit'];
       const next = order[(order.indexOf(getLightMode()) + 1) % order.length];
@@ -305,6 +319,84 @@ export class App {
       // Laatste redmiddel: toon de tekst zodat je hem zelf kunt selecteren.
       window.prompt('Kopiëren lukte niet automatisch. Selecteer en kopieer:', text);
     }
+  }
+
+  // ------------------------------------------------------------ afdrukken (F16)
+
+  private bindPrint(): void {
+    const paper = $<HTMLSelectElement>('print-paper');
+    const orient = $<HTMLSelectElement>('print-orientation');
+    const tokens = $<HTMLInputElement>('print-tokens');
+    const ink = $<HTMLInputElement>('print-ink');
+    const hidden = $<HTMLInputElement>('print-hidden');
+    const fill = () => {
+      paper.value = this.printOpts.paper;
+      orient.value = this.printOpts.orientation;
+      tokens.checked = this.printOpts.tokens;
+      ink.checked = this.printOpts.inkSaver;
+      hidden.checked = this.printOpts.hiddenSheets;
+    };
+    const read = () => {
+      this.printOpts = {
+        paper: paper.value === 'A3' ? 'A3' : 'A4',
+        orientation: orient.value as PrintOptions['orientation'],
+        tokens: tokens.checked,
+        inkSaver: ink.checked,
+        hiddenSheets: hidden.checked,
+      };
+      savePrint(this.printOpts);
+      this.updatePrintSummary();
+    };
+    for (const el of [paper, orient, tokens, ink, hidden]) el.addEventListener('change', read);
+
+    $('btn-print').addEventListener('click', () => {
+      if (!this.state) return this.showToast('Laad eerst een kaart.');
+      fill();
+      this.updatePrintSummary();
+      this.printDialog.showModal();
+    });
+    $('btn-print-go').addEventListener('click', () => void this.print());
+  }
+
+  private updatePrintSummary(): void {
+    const out = $('print-summary');
+    if (!this.state) return void (out.textContent = '');
+    const map = this.state.map;
+    const plans = printPlans(map, this.printOpts);
+    let text = planSummary(plans.main, { c0: 0, r0: 0, cols: map.cols, rows: map.rows });
+    const extra = plans.hidden.reduce((n, p) => n + p.sheets.length, 0);
+    if (this.printOpts.hiddenSheets) {
+      text += plans.hidden.length
+        ? `, + ${extra} ${extra === 1 ? 'blad' : 'bladen'} voor ${plans.hidden.length} verborgen ${plans.hidden.length === 1 ? 'kamer' : 'kamers'}`
+        : ' (geen verborgen kamers op deze kaart)';
+    }
+    out.textContent = `${text}.`;
+  }
+
+  /** De bladen opbouwen en de papiergrootte doorgeven aan de browser (@page). */
+  private buildPrintSheets(): boolean {
+    if (!this.state) {
+      this.printRoot.replaceChildren();
+      return false;
+    }
+    const { pageW, pageH } = buildPrint(this.printRoot, this.state, this.printOpts);
+    let style = document.getElementById('print-page-style');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'print-page-style';
+      document.head.appendChild(style);
+    }
+    style.textContent = `@page { size: ${pageW}mm ${pageH}mm; margin: 0; }`;
+    return true;
+  }
+
+  private async print(): Promise<void> {
+    if (!this.buildPrintSheets()) return this.showToast('Laad eerst een kaart.');
+    this.printDialog.close();
+    this.showToast('Afbeeldingen laden voor de print…', 6000);
+    await waitForImages(this.printRoot);
+    this.toast.hidden = true;
+    window.print();
   }
 
   // ------------------------------------------------------------ zoom en thema

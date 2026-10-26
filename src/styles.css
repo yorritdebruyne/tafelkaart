@@ -298,3 +298,61 @@ button:disabled { opacity: 0.45; cursor: default; }
 /* In een kast of huifkar: half doorzichtig, je ziet de kast er nog door. */
 .token.inside { opacity: 0.6; }
 .token.inside .token-body { stroke-dasharray: 10 6; }
+
+/* ------------------------------------------------------------------ afdrukken (F16) */
+.print-options { display: grid; gap: 8px; margin: 8px 0; }
+.print-options label { display: grid; gap: 4px; font-size: 14px; }
+.print-options label.check { display: flex; gap: 8px; align-items: flex-start; }
+.print-options input[type='checkbox'] { width: 20px; height: 20px; margin: 0; flex: none; }
+.print-options select {
+  font: inherit;
+  min-height: 40px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+}
+.print-summary { font-weight: 600; }
+
+/* De bladen bestaan alleen tijdens het afdrukken. Op het scherm zie je ze niet. */
+#print-root { display: none; }
+.print-master { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* Op papier altijd het lichte thema, met een iets donkerder grid (dan zie je de vakjes goed). */
+#print-root {
+  --map-empty: #ffffff;
+  --grid: rgba(0, 0, 0, 0.38);
+  --label: #555;
+}
+.print-hidden { fill: #ffffff; }
+.print-border { fill: none; stroke: rgba(0, 0, 0, 0.6); stroke-width: 0.25; }
+.print-marks { fill: none; stroke: #000; stroke-width: 0.2; }
+.print-label {
+  fill: #555;
+  font: 600 2.6px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.print-footer { fill: #444; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; dominant-baseline: central; }
+.print-mini { fill: none; stroke: #888; stroke-width: 0.15; }
+.print-mini.here { fill: #888; }
+
+@media print {
+  /* Alleen de bladen; de rest van de app (knoppen, status, dialogen) niet. */
+  body > *:not(#print-root) { display: none !important; }
+  html, body { background: #fff !important; margin: 0; padding: 0; }
+  #print-root {
+    display: block;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-sheet {
+    position: relative;
+    overflow: hidden;
+    break-after: page;
+    page-break-after: always;
+  }
+  .print-sheet:last-child { break-after: auto; page-break-after: auto; }
+  .print-page { display: block; }
+}

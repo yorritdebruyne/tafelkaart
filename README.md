@@ -55,6 +55,23 @@ Er opent een paneel met de scripts; dubbelklik op het script dat je wil.
 | `dev:telefoon` | start de app, ook bereikbaar in je netwerk | open het `Network:`-adres uit de uitvoer op je telefoon (zelfde wifi) |
 | `test` | draait alle tests | alles moet groen zijn |
 | `build` | maakt de website voor online | resultaat in `dist/` |
+| `tafel` | zoals `dev:telefoon`: app + tafel voor telefoons en tv | zie hieronder |
+| `tafel:server` | app + tafel zonder Vite (bv. op de Pi), na `fa-bundle` of `build` | poort 8080 |
+
+### Spelen met de tv en jullie telefoons (de "tafel")
+
+1. Op de pc (die met HDMI aan de tv hangt): dubbelklik op het script **`tafel`**.
+   In de uitvoer staat een `Network:`-adres, bv. `http://192.168.1.20:5173/`.
+2. **Tv**: open op de pc `http://localhost:5173/?tv` in een venster op de tv. Klik één keer
+   (of druk **F**) voor volledig scherm. Ook de browser van de Google TV kan dat adres openen
+   (met het `Network:`-adres in plaats van `localhost`).
+3. **Telefoons** (zelfde wifi): open het `Network:`-adres. Bovenaan staat dan `tafel: 3`
+   (2 telefoons + tv). Wie het eerst een kaart heeft of laadt, bepaalt de kaart voor iedereen.
+4. Slepen, deuren, patches, *Nieuwe beurt* en *Ongedaan* verschijnen meteen op alle toestellen.
+   Licht, sfeer, thema en zoom blijven per toestel.
+
+Op de tv (`?tv`): **F** = volledig scherm, **L** = kaart laden, **Ctrl+Z** = ongedaan. Slepen met de muis kan ook.
+In het weekend via Tailscale: zelfde stappen, met het Tailscale-adres van de pc (of de Pi, met `tafel:server`).
 
 Stoppen: het rode vierkantje in het Run-venster, of `Ctrl+C` in de terminal.
 
@@ -121,6 +138,18 @@ Klik in de app op **Laden → Testkaart (stal)** en controleer:
       Huis 2 (rode rand) is op slot. *Kopieer posities* eindigt op `(deur huis1 open)`;
       na *Nieuwe beurt* valt die melding weg.
 
+**M4 (nieuw): tv en telefoons** – start `tafel` (zie 2.)
+
+- [ ] Open `http://localhost:5173/?tv` op de pc: donker, geen knoppen, melding "Nog geen kaart".
+- [ ] Telefoon 1: open het `Network:`-adres, laad de stal. De tv toont ze meteen, bovenaan de telefoon `tafel: 2`.
+- [ ] Telefoon 2 (Kim): open hetzelfde adres. Ze krijgt de stal zonder iets te laden (`tafel: 3`).
+- [ ] Sleep Akmenos op telefoon 1: de tv en telefoon 2 zien het token live mee bewegen.
+- [ ] Sleep tegelijk Akmenos (telefoon 1) en Amara (telefoon 2): allebei komen ze goed aan, overal.
+- [ ] Deur openen, testpatch, *Nieuwe beurt* en *Ongedaan* op één telefoon: zelfde op de andere en de tv.
+- [ ] Herlaad de tv (F5): de kaart en posities staan er meteen weer.
+- [ ] Zet de wifi van een telefoon even uit en weer aan: `tafel: weg…`, daarna weer gelijk.
+- [ ] Op de tv: F = volledig scherm, de kaart schaalt mee.
+
 **M4 (nieuw): afdrukken**
 
 - [ ] Laad de stal → **Afdrukken**. De dialoog zegt: *2 bladen A4 staand … kaart 25 × 25 cm*.
@@ -170,8 +199,12 @@ src/
     drag.ts      slepen met muis en touch (pointer events)
     clipboard.ts kopiëren, ook op http via de telefoon
     hash.ts      kaart via #map=... of #b64=...
+    sync.ts      tafel: met andere telefoons en de tv gelijk blijven (F17)
     storage.ts   laatste kaart en posities bewaren in de browser
   *.test.ts      tests (Vitest)
+scripts/
+  tafel-relay.js   het doorgeefluik voor de tafel (+ test)
+  tafel-server.js  app + tafel zonder Vite, bv. op de Pi
 voorbeelden/
   fouten-demo.json     kaart met opzettelijke fouten
   testpatch-stal.json  de testpatch voor de stal
@@ -248,7 +281,21 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
   met `<use>` een stuk van, via een `viewBox`. Het blad zelf is een SVG in millimeter (`viewBox="0 0 210 297"`),
   dus 1 eenheid = 1 mm. `@page { size: …mm; margin: 0 }` zegt de browser hoe groot het papier is.
 - Verborgen kamers: blanco op de kaart, of (vinkje) op een apart blad zonder tokens.
-- **F17 tv-modus**: nog niet, eerst samen bespreken.
+- **F17 tv-modus** (besproken 26 okt: tv rechtop, als spelbord, bediening met elk zijn eigen telefoon):
+  - `?tv` achter het adres: geen knoppen, donker, de hele kaart past op het scherm, rechts de spelers
+    met hoeveel ze bewogen. Volledig scherm met F of een klik.
+  - Twee vensters in dezelfde browser (pc + tv-venster) volgen elkaar al via `localStorage` (het
+    `storage`-event).
+  - Andere toestellen: het **doorgeefluik** `scripts/tafel-relay.js` (draait mee in Vite, of in
+    `scripts/tafel-server.js`). Geen WebSocket-bibliotheek: *Server-Sent Events* (een verbinding die
+    openblijft, de server stuurt erover) + gewone POST. Het luik onthoudt de laatste volledige toestand
+    en de stappen erna, zodat een toestel dat (opnieuw) verbindt meteen gelijk loopt.
+  - We sturen **stappen** (`move`, `door`, `turn`, `patch`), geen hele kaart: elk toestel voert ze uit met
+    dezelfde functies (`applySyncOp` in `src/ui/sync.ts`), zodat twee spelers tegelijk kunnen slepen.
+    Alleen een nieuwe kaart en *Ongedaan* sturen de hele toestand. Tijdens het slepen gaan er ook
+    `drag`-berichten mee: de anderen zien het token live bewegen.
+  - Let op: *Ongedaan* zet de kaart terug naar vóór jouw laatste stap, ook als een ander intussen iets
+    deed. Iedereen in je wifi (of tailnet) kan meedoen: alleen thuis gebruiken.
 
 ## 5c. Forgotten Adventures (eenmalig instellen)
 

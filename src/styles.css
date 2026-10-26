@@ -413,3 +413,16 @@ body.tv .toast { font-size: clamp(16px, 1.4vw, 30px); padding: 0.6em 1em; }
   body.tv .map-scroller { height: auto; min-height: 0; }
   body.tv .status { grid-column: 1; grid-row: 2; padding: 8px 12px; }
 }
+
+/* Tafel-verbinding (F17): klein label naast de kaartnaam. */
+.sync-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(46, 160, 67, 0.18);
+  color: #2e8b45;
+  white-space: nowrap;
+}
+.sync-status.off { background: rgba(179, 38, 30, 0.15); color: var(--danger); }
+.sync-status[hidden] { display: none; }

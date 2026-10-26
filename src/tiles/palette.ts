@@ -88,7 +88,7 @@ export const PROP: Record<string, string> = {
     'stairs-up', 'stairs-down', 'ladder', 'pillar', 'statue', 'altar', 'well', 'trough', 'rubble', 'bell',
   ]),
   ...group(NATURE, ['tree', 'bush', 'rock', 'boulder', 'log', 'reeds', 'flowers', 'stone-circle-stone', 'campfire']),
-  ...group(SMALL, ['sacks', 'hay', 'cart', 'lantern', 'candle', 'brazier', 'bones', 'weapon-rack', 'anvil']),
+  ...group(SMALL, ['sacks', 'hay', 'cart', 'wagon', 'lantern', 'candle', 'brazier', 'bones', 'weapon-rack', 'anvil']),
   ...group(MARKER, ['trap-marker']),
 };
 
@@ -116,10 +116,16 @@ export const TOKEN = { inner: '#2a2420', innerLight: '#4a403a', outline: 'rgba(0
  * hier niet in. Bij bomen (TRUNK_PROPS) houdt alleen de stam tegen: het middelste vakje.
  */
 export const BLOCKING_PROPS = new Set([
-  'table', 'bed', 'chest', 'barrel', 'crate', 'bookshelf', 'cupboard', 'counter', 'fireplace',
+  'table', 'bed', 'chest', 'barrel', 'crate', 'bookshelf', 'counter', 'fireplace',
   'oven', 'pillar', 'statue', 'altar', 'well', 'trough', 'boulder', 'cart', 'anvil', 'weapon-rack',
 ]);
 export const TRUNK_PROPS = new Set(['tree']);
+
+/**
+ * Props waar een speler in kan kruipen of klimmen (kast, huifkar): je mag erop eindigen,
+ * erin stappen kost 1 extra, en "Kopieer posities" meldt "in de kast". Naam voor die melding.
+ */
+export const ENTER_PROPS: Record<string, string> = { cupboard: 'de kast', wagon: 'de huifkar' };
 
 /**
  * Moeilijk terrein (F12) zonder dat de DM het hoeft te zeggen: elk vakje kost 1 extra.

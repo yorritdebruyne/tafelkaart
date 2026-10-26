@@ -42,7 +42,7 @@ export function stepExtra(map: MapData, token: TokenItem, to: Cell): number {
   for (let r = 0; r < token.size; r++) for (let c = 0; c < token.size; c++) keys.push(cellKey(to.c + c, to.r + r));
   let extra = 0;
   if (keys.some((k) => info.difficult.has(k)) || isOccupied(map, to, token.size, token.id)) extra++;
-  if (keys.some((k) => info.climb.has(k))) extra++;
+  if (keys.some((k) => info.climb.has(k) || info.enter.has(k))) extra++; // klimmen of erin kruipen
   if (isCrawling(token)) extra++;
   return extra;
 }
@@ -88,10 +88,18 @@ export function leftReach(map: MapData, token: TokenItem, path: Cell[]): string[
 }
 
 /** "Posities: Akmenos: E9, Amara: E7, T3: E8" — spelers eerst, daarna de rest. */
-export function positionsText(tokens: TokenItem[], doorNotes: Record<string, string> = {}): string {
+export function positionsText(
+  tokens: TokenItem[],
+  doorNotes: Record<string, string> = {},
+  inside: (t: TokenItem) => string | undefined = () => undefined,
+): string {
   const order = { player: 0, npc: 1, enemy: 2 } as const;
   const sorted = [...tokens].sort((a, b) => order[a.side] - order[b.side]);
   const doors = Object.entries(doorNotes).map(([id, s]) => `deur ${id} ${s === 'open' ? 'open' : 'dicht'}`);
   const extra = doors.length ? ` (${doors.join(', ')})` : '';
-  return `Posities: ${sorted.map((t) => `${t.name}: ${formatCell(t.cell)}`).join(', ')}${extra}`;
+  const pos = (t: TokenItem) => {
+    const where = inside(t);
+    return `${t.name}: ${formatCell(t.cell)}${where ? ` (in ${where})` : ''}`;
+  };
+  return `Posities: ${sorted.map(pos).join(', ')}${extra}`;
 }

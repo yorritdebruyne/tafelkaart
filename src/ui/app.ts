@@ -9,7 +9,7 @@ import { conditionLabel, effectiveSpeed, speedZeroBy } from '../conditions';
 import { visibleTokens } from '../fog';
 import type { LightMode } from '../light';
 import { getLightMode, setLightMode } from '../render/light';
-import { clearTerrainCache } from '../terrain';
+import { clearTerrainCache, insideOf } from '../terrain';
 import { applyPatch } from '../patch';
 import { isOverSpeed, leftReach, pathCost, pathLength, positionsText, squaresToMeters } from '../rules';
 import { parseJsonLenient, parseMapText } from '../schema';
@@ -297,7 +297,8 @@ export class App {
   private async copyPositions(): Promise<void> {
     if (!this.state) return this.showToast('Laad eerst een kaart.');
     // Wie in de mist staat, komt er niet in (anders verklapt de app iets).
-    const text = positionsText(visibleTokens(this.state.map), this.state.doorNotes);
+    const map = this.state.map;
+    const text = positionsText(visibleTokens(map), this.state.doorNotes, (t) => insideOf(map, t));
     if (await copyText(text)) {
       this.showToast(`Gekopieerd: ${text}`);
     } else {
@@ -416,7 +417,8 @@ export class App {
       const name = document.createElement('span');
       name.className = 'name';
       const conds = t.conditions?.length ? ` (${t.conditions.map(conditionLabel).join(', ')})` : '';
-      name.textContent = `${t.name} · ${formatCell(t.cell)}${conds}`;
+      const inside = insideOf(state.map, t);
+      name.textContent = `${t.name} · ${formatCell(t.cell)}${inside ? ` (in ${inside})` : ''}${conds}`;
       const move = document.createElement('span');
       move.className = 'move';
       const speed = speedNum !== undefined ? `/${speedNum}` : '';

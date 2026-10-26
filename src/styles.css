@@ -150,7 +150,7 @@ svg.map { display: block; margin: 0 auto; user-select: none; -webkit-user-select
   font-family: ui-monospace, Consolas, monospace;
 }
 
-.layer-props, .layer-fog, .layer-decor { pointer-events: none; }
+.layer-props, .layer-fog, .layer-decor, .layer-terrain, .layer-light { pointer-events: none; }
 .prop-placeholder { stroke: rgba(0, 0, 0, 0.55); stroke-width: 2; opacity: 0.92; }
 .prop-placeholder.unknown { stroke-dasharray: 5 4; }
 .prop-top { fill: rgba(255, 255, 255, 0.85); }
@@ -276,3 +276,22 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
   z-index: 20;
 }
 .toast[hidden] { display: none; }
+
+/* Condities (F14): geel labeltje bovenaan het token. */
+.conditions rect { fill: #f2c14e; stroke: rgba(0, 0, 0, 0.55); stroke-width: 1.5; }
+.conditions text {
+  fill: #2a1d05;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.status .selected-info {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  font-weight: 600;
+}
+button:disabled { opacity: 0.45; cursor: default; }

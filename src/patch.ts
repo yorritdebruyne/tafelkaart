@@ -13,6 +13,7 @@
 // terug. Daardoor kan undo (M3) later gewoon de oude state terugzetten.
 
 import { z } from 'zod';
+import { conditionLabel } from './conditions';
 import { type Cell, cellInBounds, formatCell, parseCell } from './coords';
 import { type DoorItem, type DoorState, MAP_VERSION, type TokenItem, issuesToText } from './schema';
 import type { MapState } from './state';
@@ -203,7 +204,7 @@ export function applyPatch(state: MapState, input: unknown): PatchResult {
     }
     if (p.conditions !== undefined) {
       updated = { ...updated, conditions: p.conditions };
-      changes.push(`${existing.name}: ${p.conditions.length ? p.conditions.join(', ') : 'geen condities'}`);
+      changes.push(`${existing.name}: ${p.conditions.length ? p.conditions.map(conditionLabel).join(', ') : 'geen condities'}`);
     }
     if (p.cell === undefined && p.conditions === undefined) {
       warnings.push(`${where}: niets te doen (verwacht "cell", "conditions", "add" of "remove")`);

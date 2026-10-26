@@ -13,8 +13,9 @@ describe('schema', () => {
     expect(res.map?.walls).toHaveLength(6);
     expect(res.map?.doors[0]).toMatchObject({ id: 'zadel', side: 'W', state: 'closed' });
     expect(res.map?.regions).toEqual([{ id: 'zadelkamer', rect: { c1: 7, r1: 5, c2: 9, r2: 7 }, hidden: true }]);
-    expect(res.notes[0]).toContain('terrain');
-    expect(res.notes[0]).not.toContain('regions');
+    expect(res.notes).toEqual([]);
+    expect(res.map?.terrain).toHaveLength(2);
+    expect(res.map?.lights).toEqual([{ cell: { c: 4, r: 8 }, radius: 3, color: '#b48cff' }]);
   });
 
   it('regio zonder hidden is verborgen; fout gebied geeft een melding', () => {

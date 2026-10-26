@@ -120,3 +120,28 @@ export const BLOCKING_PROPS = new Set([
   'oven', 'pillar', 'statue', 'altar', 'well', 'trough', 'boulder', 'cart', 'anvil', 'weapon-rack',
 ]);
 export const TRUNK_PROPS = new Set(['tree']);
+
+/**
+ * Moeilijk terrein (F12) zonder dat de DM het hoeft te zeggen: elk vakje kost 1 extra.
+ * Props: op de vakjes waar ze getekend staan. Vloeren: als ze bovenaan liggen.
+ * Ladder = klimmen: ook 1 extra per vakje.
+ */
+export const DIFFICULT_PROPS = new Set(['rubble', 'bush']);
+export const DIFFICULT_FLOORS = new Set(['water-shallow', 'water-deep']);
+export const CLIMB_PROPS = new Set(['ladder']);
+
+/** Arcering van moeilijk terrein van de DM: schuine streepjes, licht met een donkere schaduw. */
+export const TERRAIN = { spacing: 14, light: 'rgba(255, 244, 214, 0.42)', dark: 'rgba(0, 0, 0, 0.28)', width: 2.5 };
+
+/**
+ * Licht (F13). Zodra een kaart minstens één lichtbron van de DM heeft (of je de knop op
+ * "aan" zet), wordt de kaart donker en schijnt er licht rond de bronnen.
+ * `darkness` = hoe donker het is waar geen licht komt (0 = niet, 1 = zwart).
+ * `glow` = hoe sterk de kleur van het licht op de vloer valt.
+ */
+export const LIGHT = { color: '#070914', darkness: 0.62, glow: 0.3, propColor: '#ffb35c' };
+
+/** Props die vanzelf licht geven (heldere straal in vakjes; daarbuiten nog eens zoveel schemer). */
+export const PROP_LIGHTS: Record<string, number> = {
+  candle: 1, lantern: 2, brazier: 2, campfire: 3, fireplace: 2,
+};

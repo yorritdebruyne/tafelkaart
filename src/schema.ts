@@ -40,13 +40,18 @@ export interface TokenItem {
   size: 1 | 2;
   /** Speed in vakjes (6 = 30 ft = 9 m). */
   speed?: number;
-  /** Condities (bv. "prone"), gezet via een patch. Getekend als badge in M3 (F14). */
+  /** Condities (bv. "prone"), uit de kaart of een patch. Getekend als badge (F14). */
   conditions?: string[];
 }
 /** Een prop (F10): meubel, boom, ... op één vakje of over een rechthoek. rot in graden, met de klok mee. */
 export interface PropItem { tile: string; rect: Rect; rot: number; }
 /** Een regio voor fog of war (F11). Verborgen = bedekt met mist. */
 export interface RegionItem { id: string; rect: Rect; hidden: boolean; }
+/** Terrein (F12). Nu alleen "difficult": elk vakje kost 1 extra. */
+export interface TerrainItem { kind: TerrainKind; rect: Rect; }
+export type TerrainKind = 'difficult';
+/** Lichtbron (F13). radius = heldere straal in vakjes; daarbuiten nog eens zoveel schemer. */
+export interface LightItem { cell: Cell; radius: number; color: string; }
 
 export interface MapData {
   version: number;
@@ -58,6 +63,8 @@ export interface MapData {
   doors: DoorItem[];
   props: PropItem[];
   regions: RegionItem[];
+  terrain: TerrainItem[];
+  lights: LightItem[];
   tokens: TokenItem[];
 }
 
@@ -120,16 +127,30 @@ const TokenSchema = z.object({
   cell: z.string(),
   size: z.union([z.literal(1), z.literal(2)]).default(1),
   speed: z.number().positive().optional(),
+  conditions: z.array(z.string()).optional(),
 });
+
+const TerrainSchema = z.object({
+  kind: z.string().min(1),
+  area: z.string().optional(),
+  cell: z.string().optional(),
+});
+
+const LightSchema = z.object({
+  cell: z.string(),
+  radius: z.number().positive().max(50),
+  color: z.string().optional(),
+});
+
+/** Standaardkleur van licht: warm, zoals een fakkel. */
+export const DEFAULT_LIGHT_COLOR = '#ffc878';
+const COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 // "E" en "S" (Engels) aanvaarden we ook, voor het gemak.
 const SIDE_ALIASES: Record<string, EdgeSide> = { N: 'N', O: 'O', E: 'O', Z: 'Z', S: 'Z', W: 'W' };
 
-/** Velden die we al aanvaarden maar pas later tekenen. */
-const LATER: Record<string, string> = {
-  terrain: 'M3',
-  lights: 'M3',
-};
+/** Velden die we al aanvaarden maar pas later tekenen (nu niets meer). */
+const LATER: Record<string, string> = {};
 
 // ---------------------------------------------------------------- foutmeldingen
 
@@ -367,6 +388,37 @@ export function parseMapObject(input: unknown): ParseResult {
     regions.push({ id, rect, hidden });
   });
 
+  // --- terrain (F12)
+  const terrain: TerrainItem[] = [];
+  list('terrain').forEach((raw, i) => {
+    const where = `terrain[${i}]`;
+    const res = TerrainSchema.safeParse(raw);
+    if (!res.success) return void errors.push(...issuesToText(where, res.error, raw));
+    const { kind, area, cell } = res.data;
+    if (kind !== 'difficult') {
+      return void warnings.push(`${where}.kind: onbekend terrein "${kind}" (alleen "difficult"), overgeslagen`);
+    }
+    const rect = rectOf(area, cell, where);
+    if (!rect) return;
+    terrain.push({ kind, rect });
+  });
+
+  // --- lights (F13)
+  const lights: LightItem[] = [];
+  list('lights').forEach((raw, i) => {
+    const where = `lights[${i}]`;
+    const res = LightSchema.safeParse(raw);
+    if (!res.success) return void errors.push(...issuesToText(where, res.error, raw));
+    const cell = cellOf(res.data.cell, `${where}.cell`);
+    if (!cell) return;
+    let color = res.data.color ?? DEFAULT_LIGHT_COLOR;
+    if (!COLOR_RE.test(color)) {
+      warnings.push(`${where}.color: "${color}" is geen kleur als "#ffaa00", ik gebruik warm licht`);
+      color = DEFAULT_LIGHT_COLOR;
+    }
+    lights.push({ cell, radius: res.data.radius, color });
+  });
+
   // --- tokens
   const tokens: TokenItem[] = [];
   const tokenIds = new Set<string>();
@@ -379,7 +431,10 @@ export function parseMapObject(input: unknown): ParseResult {
     const cell = cellOf(t.cell, `${where}.cell`, t.size);
     if (!cell) return;
     tokenIds.add(t.id);
-    tokens.push({ id: t.id, name: t.name ?? t.id, side: t.side, cell, size: t.size, speed: t.speed });
+    tokens.push({
+      id: t.id, name: t.name ?? t.id, side: t.side, cell, size: t.size, speed: t.speed,
+      ...(t.conditions?.length ? { conditions: t.conditions } : {}),
+    });
   });
 
   // --- velden voor later
@@ -389,7 +444,7 @@ export function parseMapObject(input: unknown): ParseResult {
   if (later.length) notes.push(`Nog niet getekend, komt later: ${later.join(', ')}.`);
 
   return {
-    map: { version, name, cols, rows, floor, walls, doors, props, regions, tokens },
+    map: { version, name, cols, rows, floor, walls, doors, props, regions, terrain, lights, tokens },
     errors,
     warnings,
     notes,

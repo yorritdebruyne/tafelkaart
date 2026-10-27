@@ -356,3 +356,73 @@ button:disabled { opacity: 0.45; cursor: default; }
   .print-sheet:last-child { break-after: auto; page-break-after: auto; }
   .print-page { display: block; }
 }
+
+/* ------------------------------------------------------------------ tv-modus (F17) */
+/* Adres met ?tv: geen knoppen, de kaart zo groot mogelijk, links. Rechts een smalle
+   kolom met de spelers en hoeveel ze bewogen (de statuslijst, zonder knoppen). */
+body.tv {
+  height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr minmax(200px, 19vw);
+  grid-template-rows: 1fr;
+  background: #111;
+  padding: 0;
+}
+body.tv .topbar, body.tv #messages { display: none; }
+body.tv .map-scroller {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  max-height: none;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.tv svg.map { margin: 0; }
+body.tv .status {
+  grid-column: 2;
+  grid-row: 1;
+  padding: 16px 16px 16px 0;
+  overflow: auto;
+  font-size: clamp(14px, 1.15vw, 26px);
+}
+body.tv .status li { grid-template-columns: auto 1fr; grid-template-areas: 'dot name' 'dot move'; }
+body.tv .status .move { font-size: 0.85em; }
+body.tv .status .dot { width: 0.9em; height: 0.9em; }
+body.tv .status button, body.tv .status p.muted { display: none; }
+body.tv .toast { font-size: clamp(16px, 1.4vw, 30px); padding: 0.6em 1em; }
+.tv-hint {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  background: rgba(20, 20, 20, 0.85);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+  font-size: 16px;
+}
+.tv-hint:hover { background: rgba(40, 40, 40, 0.9); }
+.tv-hint[hidden] { display: none; }
+/* Smal scherm in tv-modus (bv. een staande tablet): spelers onder de kaart. */
+@media (max-aspect-ratio: 1/1) {
+  body.tv { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  body.tv .map-scroller { height: auto; min-height: 0; }
+  body.tv .status { grid-column: 1; grid-row: 2; padding: 8px 12px; }
+}
+
+/* Tafel-verbinding (F17): klein label naast de kaartnaam. */
+.sync-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(46, 160, 67, 0.18);
+  color: #2e8b45;
+  white-space: nowrap;
+}
+.sync-status.off { background: rgba(179, 38, 30, 0.15); color: var(--danger); }
+.sync-status[hidden] { display: none; }

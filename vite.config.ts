@@ -1,6 +1,8 @@
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, resolve, sep } from 'node:path';
 import { defineConfig, loadEnv, type Connect, type Plugin } from 'vite';
+// Gewoon JavaScript, zodat het ook zonder Vite werkt (op de Pi). Types: tafel-relay.d.ts.
+import { createRelay } from './scripts/tafel-relay.js';
 
 // Forgotten Adventures rechtstreeks uit je eigen map tonen, zonder te kopiëren.
 // De map staat in .env.local (niet op GitHub):  FA_DIR=C:\ForgottonAdventures
@@ -31,12 +33,20 @@ function forgottenAdventures(dir: string | undefined): Plugin {
   };
 }
 
+// Het doorgeefluik voor de tafel (telefoons + tv gelijk houden): zie scripts/tafel-relay.js.
+// Draait mee met  npm run dev  en  npm run tafel  (dan ook bereikbaar vanaf je telefoon).
+function tafel(): Plugin {
+  const relay = createRelay();
+  const use = (server: { middlewares: Connect.Server }) => void server.middlewares.use((req, res, next) => relay.handle(req, res, next));
+  return { name: 'tafelkaart-tafel', configureServer: use, configurePreviewServer: use };
+}
+
 // base './' = relatieve paden, zodat de build ook werkt in een submap.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     base: './',
     server: { port: 5173 },
-    plugins: [forgottenAdventures(env.FA_DIR)],
+    plugins: [forgottenAdventures(env.FA_DIR), tafel()],
   };
 });

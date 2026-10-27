@@ -20,11 +20,12 @@ import { TEST_MAP, TEST_PATCH, TEST_VILLAGE } from '../testmap';
 import { getSfeer, setSfeer, sfeerNames } from '../tiles';
 import { SIDE } from '../tiles/palette';
 import { copyText } from './clipboard';
+import { applySyncOp, TableSync, type SyncMessage } from './sync';
 import { attachDrag } from './drag';
 import { readMapFromHash } from './hash';
 import {
-  loadLight, loadPrint, loadSfeer, loadState, loadTheme, savePrint, saveLight, saveSfeer, saveState, saveTheme,
-  type Theme,
+  STATE_KEY, loadLight, loadPrint, loadSfeer, loadState, loadTheme, savePrint, saveLight, saveSfeer, saveState,
+  saveTheme, type Theme,
 } from './storage';
 
 /** Wat het meldingenpaneel toont (van een kaart of van een patch). */
@@ -68,11 +69,23 @@ export class App {
   private readonly toast = $<HTMLElement>('toast');
   private readonly printDialog = $<HTMLDialogElement>('print-dialog');
   private readonly printRoot = $<HTMLElement>('print-root');
+  /** Tv-modus (F17): adres eindigt op ?tv. Alleen de kaart, zo groot mogelijk, geen knoppen. */
+  private readonly tv = new URLSearchParams(location.search).has('tv');
+  /** Tafel (F17): andere telefoons en de tv, via het doorgeefluik op de server. */
+  private readonly sync = new TableSync({
+    onInit: (snap, ops) => this.syncInit(snap, ops),
+    onMessage: (msg) => this.syncReceive(msg),
+    onClients: (n) => this.syncClients(n),
+  });
+  /** Sleep ik zelf? Dan tekenen we het slepen van anderen even niet (anders hapert het). */
+  private dragging: string | null = null;
 
   start(): void {
     this.scroller.appendChild(this.view.svg);
     this.bindButtons();
-    this.applyTheme(loadTheme());
+    // Op de tv altijd donker (rustiger in een donkere kamer); niet bewaard.
+    this.applyTheme(this.tv ? 'dark' : loadTheme());
+    if (this.tv) this.startTv();
     this.initSfeer();
     this.applyLight(loadLight());
 
@@ -85,7 +98,11 @@ export class App {
       onPreview: (id, path) => this.preview(id, path),
       onCommit: (id, path) => this.commit(id, path),
       onTap: (id) => this.select(id),
-      onCancel: () => this.redrawMoving(),
+      onCancel: () => {
+        if (this.dragging) this.sync.send({ kind: 'drag-end', id: this.dragging });
+        this.dragging = null;
+        this.redrawMoving();
+      },
     });
 
     // Tik op een deur: open of dicht (niet op slot).
@@ -102,6 +119,7 @@ export class App {
       const what = `deur ${id} ${next.doorNotes?.[id] === 'open' ? 'open' : 'dicht'}`;
       this.remember(what);
       this.state = next;
+      this.sync.send({ kind: 'door', id, state: next.doorNotes![id] });
       renderMap(this.view, this.state, this.selectedId);
       this.renderStatus();
       this.save();
@@ -125,14 +143,32 @@ export class App {
     window.addEventListener('afterprint', () => this.printRoot.replaceChildren());
 
     window.addEventListener('hashchange', () => this.loadFromHash());
-    window.addEventListener('resize', () => this.applyZoom());
+    window.addEventListener('resize', () => (this.tv ? this.fitZoom() : this.applyZoom()));
+
+    // Een ander venster in dezelfde browser bewaarde een nieuwe toestand (bv. de pc-tab
+    // naast de tv-tab): overnemen. De browser stuurt dit "storage"-event alleen naar de
+    // ANDERE vensters, niet naar het venster dat zelf bewaarde.
+    window.addEventListener('storage', (e) => {
+      // Verbonden met de tafel? Dan komt alles al via het doorgeefluik.
+      if (e.key !== STATE_KEY || this.sync.connected) return;
+      const saved = loadState();
+      if (!saved) return;
+      const fresh = saved.source !== this.source;
+      this.dialog.close();
+      if (fresh) this.toast.hidden = true; // "Nog geen kaart" mag weg
+      this.setState(saved.state, saved.source, fresh, false);
+    });
 
     // Eerst de bewaarde kaart terugzetten, daarna pas de hash: zo kan een
     // patch in de hash (#b64=...) op de bewaarde kaart toegepast worden.
     const saved = loadState();
     if (saved) this.setState(saved.state, saved.source, true);
     this.updateUndoButton();
-    if (!this.loadFromHash() && !saved) this.openDialog();
+    if (!this.loadFromHash() && !saved) {
+      if (this.tv) this.showToast('Nog geen kaart. Laad er een op een ander toestel, of druk L.', 8000);
+      else this.openDialog();
+    }
+    void this.sync.start();
   }
 
   // ------------------------------------------------------------ laden
@@ -161,18 +197,20 @@ export class App {
     this.history = [];
     this.updateUndoButton();
     this.setState(createState(res.map), text, true);
+    this.sync.send({ kind: 'state', source: text, state: this.state! });
     return true;
   }
 
-  private setState(state: MapState, source: string, fresh: boolean): void {
+  private setState(state: MapState, source: string, fresh: boolean, save = true): void {
     this.state = state;
     this.source = source;
-    this.selectedId = null;
+    // Zelfde kaart (een ander venster bewoog iets): de selectie mag blijven.
+    if (fresh || !this.selectedId || !getToken(state, this.selectedId)) this.selectedId = null;
     $<HTMLElement>('map-name').textContent = `${state.map.name} · ${state.map.cols}×${state.map.rows}`;
     renderMap(this.view, state, this.selectedId);
-    if (fresh) this.fitZoom();
+    if (fresh || this.tv) this.fitZoom();
     this.renderStatus();
-    this.save();
+    if (save) this.save();
   }
 
   /** F9: een patch toepassen op de geladen kaart. */
@@ -194,6 +232,7 @@ export class App {
     this.dialogErrors.replaceChildren();
     this.remember('patch');
     this.state = res.state;
+    this.sync.send({ kind: 'patch', value });
     if (this.selectedId && !getToken(this.state, this.selectedId)) this.selectedId = null;
     renderMap(this.view, this.state, this.selectedId); // alles: deuren en mist kunnen veranderd zijn
     this.renderStatus();
@@ -217,12 +256,16 @@ export class App {
     const token = getToken(temp, id);
     if (el && token) updateBadge(el, token, pathCost(temp.map, token, path));
     this.renderStatus(temp, id);
+    this.dragging = id;
+    this.sync.send({ kind: 'drag', id, path });
   }
 
   private commit(id: string, path: Cell[]): void {
     if (!this.state) return;
     this.remember(`${getToken(this.state, id)?.name ?? id} verplaatst`);
     this.state = moveToken(this.state, id, path);
+    this.dragging = null;
+    this.sync.send({ kind: 'move', id, path });
     this.selectedId = id;
     this.redrawMoving();
     this.save();
@@ -248,6 +291,7 @@ export class App {
       if (!this.state) return;
       this.remember('nieuwe beurt');
       this.state = newTurn(this.state);
+      this.sync.send({ kind: 'turn' });
       this.redrawMoving();
       this.save();
       this.showToast('Nieuwe beurt: tellers op 0.');
@@ -299,6 +343,7 @@ export class App {
       if (!btn || !this.state) return;
       this.remember(`nieuwe beurt voor ${getToken(this.state, btn.dataset.reset!)?.name ?? btn.dataset.reset}`);
       this.state = newTurn(this.state, btn.dataset.reset);
+      this.sync.send({ kind: 'turn', id: btn.dataset.reset });
       this.redrawMoving();
       this.save();
     });
@@ -319,6 +364,108 @@ export class App {
       // Laatste redmiddel: toon de tekst zodat je hem zelf kunt selecteren.
       window.prompt('Kopiëren lukte niet automatisch. Selecteer en kopieer:', text);
     }
+  }
+
+  // ------------------------------------------------------------ tv-modus (F17)
+
+  /**
+   * Tv: geen knoppen. Met de muis (of later de telefoon) sleep je gewoon zoals anders.
+   * Toetsen: F = volledig scherm, L = kaart laden, Ctrl+Z = ongedaan.
+   */
+  private startTv(): void {
+    document.body.classList.add('tv');
+    const hint = $<HTMLElement>('tv-hint');
+    hint.hidden = false;
+    const fullscreen = () => {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else void document.documentElement.requestFullscreen?.().catch(() => undefined);
+    };
+    hint.addEventListener('click', fullscreen);
+    document.addEventListener('fullscreenchange', () => {
+      hint.hidden = !!document.fullscreenElement;
+      // Na het wisselen is het scherm anders groot.
+      requestAnimationFrame(() => this.fitZoom());
+    });
+    window.setTimeout(() => (hint.hidden = true), 15000);
+    window.addEventListener('keydown', (e) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT') || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'f' || e.key === 'F') fullscreen();
+      else if (e.key === 'l' || e.key === 'L') this.openDialog();
+    });
+  }
+
+  // ------------------------------------------------------------ tafel: andere toestellen (F17)
+
+  /** (Opnieuw) verbonden met de tafel. */
+  private syncInit(snap: { source: string; state: MapState } | null, ops: SyncMessage[]): void {
+    if (snap) {
+      // De tafel heeft al een kaart: die nemen we over, met alle stappen erna.
+      const state = ops.reduce(applySyncOp, snap.state);
+      const fresh = snap.source !== this.source;
+      if (fresh) {
+        this.history = [];
+        this.updateUndoButton();
+        this.toast.hidden = true;
+      }
+      this.dialog.close();
+      this.setState(state, snap.source, fresh);
+    } else if (this.state && !this.tv) {
+      // Lege tafel: wij brengen de kaart mee. (De tv niet: die kan een oude kaart hebben.)
+      this.sync.send({ kind: 'state', source: this.source, state: this.state });
+    }
+  }
+
+  private syncReceive(msg: SyncMessage): void {
+    if (msg.kind === 'state') {
+      const fresh = msg.source !== this.source;
+      if (fresh) {
+        this.history = [];
+        this.updateUndoButton();
+        this.toast.hidden = true;
+        this.dialog.close();
+      }
+      this.setState(msg.state, msg.source, fresh);
+      if (!fresh) this.showToast('Een ander toestel maakte iets ongedaan.');
+      return;
+    }
+    if (!this.state) return;
+    if (msg.kind === 'drag') {
+      if (this.dragging || !getToken(this.state, msg.id)) return;
+      const temp = moveToken(this.state, msg.id, msg.path);
+      renderMoving(this.view, temp, this.selectedId);
+      this.renderStatus(temp, msg.id);
+      return;
+    }
+    if (msg.kind === 'drag-end') {
+      if (!this.dragging) this.redrawMoving();
+      return;
+    }
+    const next = applySyncOp(this.state, msg);
+    if (next === this.state) return;
+    this.state = next;
+    if (this.selectedId && !getToken(next, this.selectedId)) this.selectedId = null;
+    if (msg.kind === 'move' || msg.kind === 'turn') {
+      if (!this.dragging) this.redrawMoving();
+    } else {
+      // Deur of patch: ook mist, licht en muren kunnen veranderd zijn.
+      renderMap(this.view, next, this.selectedId);
+      this.renderStatus();
+      if (msg.kind === 'door') this.showToast(`Deur ${msg.id} ${msg.state === 'open' ? 'open' : 'dicht'}.`);
+      else this.showToast('Patch toegepast (van een ander toestel).');
+    }
+    this.save();
+  }
+
+  private syncClients(n: number): void {
+    const el = $<HTMLElement>('sync-status');
+    el.hidden = false;
+    el.classList.toggle('off', n === 0);
+    el.textContent = n === 0 ? 'tafel: weg…' : `tafel: ${n}`;
+    el.title = n === 0
+      ? 'Geen verbinding met de tafel. De app probeert vanzelf opnieuw.'
+      : `${n} ${n === 1 ? 'toestel' : 'toestellen'} verbonden (telefoons en tv)`;
+    if (this.tv && n > 0) this.showToast(`Tafel: ${n} ${n === 1 ? 'toestel' : 'toestellen'} verbonden.`);
   }
 
   // ------------------------------------------------------------ afdrukken (F16)
@@ -406,6 +553,12 @@ export class App {
     if (!this.state) return;
     const { cols, rows } = this.state.map;
     const margin = GUTTER / S + 0.2;
+    if (this.tv) {
+      // Tv: de hele kaart past op het scherm, zo groot als het kan (geen scrollen).
+      const fit = Math.min(this.scroller.clientWidth / (cols + margin), this.scroller.clientHeight / (rows + margin));
+      this.cellPx = Math.max(8, Math.floor(fit));
+      return this.applyZoom();
+    }
     const availW = Math.max(200, this.scroller.clientWidth - 8);
     const availH = Math.max(300, window.innerHeight * 0.72);
     const fit = Math.min(availW / (cols + margin), availH / (rows + margin));
@@ -464,6 +617,7 @@ export class App {
     renderMap(this.view, this.state, this.selectedId);
     this.renderStatus();
     this.save();
+    this.sync.send({ kind: 'state', source: this.source, state: this.state });
     this.showToast(`Ongedaan: ${last.label}.`);
   }
 

@@ -71,7 +71,12 @@ export function toggleDoor(state: MapState, id: string): MapState {
   const e = cellEdge(door.cell, door.side);
   const other = { c: door.cell.c - e.nx, r: door.cell.r - e.ny };
   if (isCellHidden(state.map, door.cell) && isCellHidden(state.map, other)) return state;
-  const next: DoorState = door.state === 'open' ? 'closed' : 'open';
+  return setDoorState(state, id, door.state === 'open' ? 'closed' : 'open');
+}
+
+/** Een deur die een speler opende of sloot op een ander toestel (zie ui/sync.ts). */
+export function setDoorState(state: MapState, id: string, next: DoorState): MapState {
+  if (!state.map.doors.some((d) => d.id === id)) return state;
   return {
     ...state,
     map: { ...state.map, doors: state.map.doors.map((d) => (d.id === id ? { ...d, state: next } : d)) },

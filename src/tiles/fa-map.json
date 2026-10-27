@@ -28,7 +28,7 @@
     "barrel":    [{ "dir": "!Core_Settlements/Decor/Storage/Barrels", "match": "^Barrel_", "exclude": "Lid|Large|Side|Torture|Stand" }],
     "crate":     [{ "dir": "!Core_Settlements/Decor/Storage/Boxes_and_Crates/Crates", "match": "^Crate_" }],
     "bookshelf": [{ "dir": "!Core_Settlements/Furniture/Shelves/Bookshelves", "match": "^Bookshelf_" }],
-    "cupboard":  [{ "dir": "!Core_Settlements/Furniture/Cupboards_and_Wardrobes", "match": "^Cupboard_" }],
+    "cupboard":  [{ "dir": "!Core_Settlements/Furniture/Cupboards_and_Wardrobes", "match": "^Cupboard_", "exclude": "Door" }],
     "counter":   [{ "dir": "!Core_Settlements/Furniture/Tables/Bars_and_Counters", "match": "^(Bar|Counter)" }],
     "fireplace": [{ "dir": "!Core_Settlements/Structures/Building/Fireplaces", "match": "^Fireplace_", "exclude": "Accessor|Poker|Tool" }],
     "oven":      [{ "dir": "!Core_Settlements/Furniture/Cooking_Appliances", "match": "Oven", "exclude": "Shovel" }],

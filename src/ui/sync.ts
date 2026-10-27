@@ -12,6 +12,7 @@
 // kaart en bij Ongedaan sturen we de hele toestand.
 
 import type { Cell } from '../coords';
+import type { LightMode } from '../light';
 import type { DoorState } from '../schema';
 import { applyPatch } from '../patch';
 import { getToken, moveToken, newTurn, setDoorState, type MapState } from '../state';
@@ -23,7 +24,9 @@ export type SyncMessage =
   | { kind: 'turn'; id?: string }
   | { kind: 'patch'; value: unknown }
   | { kind: 'drag'; id: string; path: Cell[] }
-  | { kind: 'drag-end'; id: string };
+  | { kind: 'drag-end'; id: string }
+  /** Licht en sfeer: gelden voor de hele tafel (thema en zoom blijven per toestel). */
+  | { kind: 'look'; light?: LightMode; sfeer?: string };
 
 /** Wat het doorgeefluik meestuurt: wie het stuurde en het volgnummer. */
 type Received = SyncMessage & { from?: string; seq?: number };
@@ -33,11 +36,16 @@ interface Init {
   snapshot: (Received & { kind: 'state' }) | null;
   ops: Received[];
   clients: number;
+  look?: { light?: LightMode; sfeer?: string } | null;
 }
 
 export interface SyncHandlers {
   /** (Opnieuw) verbonden: de laatste toestand van de tafel en de stappen erna. */
-  onInit(snapshot: { source: string; state: MapState } | null, ops: SyncMessage[]): void;
+  onInit(
+    snapshot: { source: string; state: MapState } | null,
+    ops: SyncMessage[],
+    look: { light?: LightMode; sfeer?: string } | null,
+  ): void;
   onMessage(msg: SyncMessage): void;
   /** Aantal verbonden toestellen (dit toestel inbegrepen), of 0 als de lijn weg is. */
   onClients(n: number): void;
@@ -109,6 +117,7 @@ export class TableSync {
         init.snapshot ? { source: init.snapshot.source, state: init.snapshot.state } : null,
         // Ook onze eigen stappen: na een herverbinding beginnen we opnieuw vanaf de samenvatting.
         init.ops,
+        init.look ?? null,
       );
       this.handlers.onClients(init.clients);
       return;

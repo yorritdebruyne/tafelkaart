@@ -426,3 +426,20 @@ body.tv .toast { font-size: clamp(16px, 1.4vw, 30px); padding: 0.6em 1em; }
 }
 .sync-status.off { background: rgba(179, 38, 30, 0.15); color: var(--danger); }
 .sync-status[hidden] { display: none; }
+
+/* Knoppenbalk in- en uitklappen. Ingeklapt: alleen de titelregel, de kaart krijgt de plaats. */
+.title { flex: 1 1 auto; }
+.bar-toggle {
+  margin-left: auto;
+  order: 2;
+  min-height: 32px;
+  width: 40px;
+  padding: 0;
+  font-size: 16px;
+  flex: none;
+}
+/* Ingeklapt blijven alleen de zoomknoppen staan. */
+body.bar-folded .toolbar > :not(.zoom) { display: none; }
+body.bar-folded .zoom button { min-height: 32px; }
+body.bar-folded .topbar { padding-top: 4px; padding-bottom: 4px; }
+body.bar-folded .map-scroller { max-height: calc(100dvh - 60px); }

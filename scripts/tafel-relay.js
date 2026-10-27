@@ -18,6 +18,7 @@
 const OPS = new Set(['move', 'door', 'turn', 'patch']);
 /** Live-berichten (vinger beweegt): doorsturen, niet onthouden. */
 const LIVE = new Set(['drag', 'drag-end']);
+// "look" (licht en sfeer) onthouden we apart: dat blijft ook na een nieuwe kaart gelden.
 const MAX_BODY = 4 * 1024 * 1024;
 const MAX_OPS = 5000;
 const KEEPALIVE_MS = 20000;
@@ -33,6 +34,8 @@ export function createRelay() {
   let snapshot = null;
   /** @type {object[]} */
   let ops = [];
+  /** @type {object | null} */
+  let look = null;
   let seq = 0;
 
   const write = (res, msg) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
@@ -56,7 +59,7 @@ export function createRelay() {
     res.write('retry: 2000\n\n'); // de browser probeert na 2 s opnieuw als de lijn wegvalt
     clients.get(id)?.end(); // zelfde toestel opnieuw verbonden
     clients.set(id, res);
-    write(res, { kind: 'init', snapshot, ops, clients: clients.size });
+    write(res, { kind: 'init', snapshot, ops, look, clients: clients.size });
     announce();
     req.on('close', () => {
       if (clients.get(id) === res) clients.delete(id);
@@ -94,6 +97,8 @@ export function createRelay() {
       if (msg.kind === 'state') {
         snapshot = msg;
         ops = [];
+      } else if (msg.kind === 'look') {
+        look = msg;
       } else if (OPS.has(msg.kind)) {
         ops.push(msg);
         if (ops.length > MAX_OPS) ops.shift();

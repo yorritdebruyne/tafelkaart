@@ -16,6 +16,7 @@
         <button id="btn-load" type="button">Laden</button>
         <button id="btn-copy" type="button" class="primary">Kopieer posities</button>
         <button id="btn-turn" type="button">Nieuwe beurt</button>
+        <button id="btn-print" type="button" title="Afdrukken op ware grootte: 1 vakje = 25 mm">Afdrukken</button>
         <button id="btn-undo" type="button" disabled title="Niets om ongedaan te maken">↶ Ongedaan</button>
         <span class="zoom">
           <button id="btn-zoom-out" type="button" aria-label="Uitzoomen">−</button>
@@ -49,6 +50,39 @@
         </div>
       </form>
     </dialog>
+
+    <dialog id="print-dialog">
+      <form method="dialog" class="load-form print-form">
+        <h2>Afdrukken</h2>
+        <p class="muted">Elk vakje wordt precies 25 mm, zodat je minis erop passen. Een grote kaart komt op meerdere bladen: knip langs de snijtekens en plak ze aan elkaar.</p>
+        <div class="print-options">
+          <label>Papier
+            <select id="print-paper">
+              <option value="A4">A4</option>
+              <option value="A3">A3</option>
+            </select>
+          </label>
+          <label>Richting
+            <select id="print-orientation">
+              <option value="auto">automatisch (minste bladen)</option>
+              <option value="portrait">staand</option>
+              <option value="landscape">liggend</option>
+            </select>
+          </label>
+          <label class="check"><input id="print-tokens" type="checkbox" /> Tokens afdrukken (anders: alleen de kaart, voor je minis)</label>
+          <label class="check"><input id="print-ink" type="checkbox" /> Inktspaarmodus (lichtere vloeren, geen versiering en schaduw)</label>
+          <label class="check"><input id="print-hidden" type="checkbox" /> Verborgen kamers op aparte bladen (anders blijven ze blanco)</label>
+        </div>
+        <p id="print-summary" class="print-summary"></p>
+        <p class="muted">In het printvenster: schaal <strong>100 %</strong> of <strong>Ware grootte</strong> (niet "Aanpassen aan pagina"), en zet <strong>Achtergrondafbeeldingen</strong> aan als die optie er staat. Meet daarna een vakje na: 25 mm (4 vakjes = 10 cm).</p>
+        <div class="dialog-buttons">
+          <button id="btn-print-go" type="button" class="primary">Afdrukken</button>
+          <button value="close" type="submit">Sluiten</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="print-root" aria-hidden="true"></div>
 
     <div id="toast" class="toast" hidden></div>
 

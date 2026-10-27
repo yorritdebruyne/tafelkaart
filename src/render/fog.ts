@@ -78,7 +78,7 @@ export function renderFog(g: SVGGElement, map: MapData): void {
   for (const d of map.doors) if (onFogEdge(map, d)) renderDoor(g, d, map.name);
 }
 
-function onFogEdge(map: MapData, d: DoorItem): boolean {
+export function onFogEdge(map: MapData, d: DoorItem): boolean {
   const e = cellEdge(d.cell, d.side);
   const other = { c: d.cell.c - e.nx, r: d.cell.r - e.ny };
   if (other.c < 0 || other.r < 0 || other.c >= map.cols || other.r >= map.rows) return false;

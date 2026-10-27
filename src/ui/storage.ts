@@ -4,6 +4,7 @@
 import { cellInBounds } from '../coords';
 import type { LightMode } from '../light';
 import { parseMapText } from '../schema';
+import { DEFAULT_PRINT, type PrintOptions } from '../print/options';
 import { createState, type MapState } from '../state';
 
 /**
@@ -17,6 +18,7 @@ export const SAVE_FORMAT = 3;
 
 const STATE_KEY = 'tafelkaart.v1.state';
 const THEME_KEY = 'tafelkaart.v1.theme';
+const PRINT_KEY = 'tafelkaart.v1.print';
 
 export interface Saved {
   /** De JSON-tekst waarmee de kaart geladen werd (om te herkennen of de hash dezelfde kaart is). */
@@ -127,5 +129,29 @@ export function loadTheme(): Theme {
     return t === 'light' || t === 'dark' ? t : 'auto';
   } catch {
     return 'auto';
+  }
+}
+
+/** Printinstellingen (F16): papier, richting en vinkjes. Onbekende of kapotte waarden -> standaard. */
+export function loadPrint(): PrintOptions {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PRINT_KEY) ?? '{}') as Partial<PrintOptions>;
+    return {
+      paper: raw.paper === 'A3' ? 'A3' : 'A4',
+      orientation: raw.orientation === 'portrait' || raw.orientation === 'landscape' ? raw.orientation : 'auto',
+      tokens: raw.tokens === true,
+      inkSaver: raw.inkSaver === true,
+      hiddenSheets: raw.hiddenSheets === true,
+    };
+  } catch {
+    return { ...DEFAULT_PRINT };
+  }
+}
+
+export function savePrint(opts: PrintOptions): void {
+  try {
+    localStorage.setItem(PRINT_KEY, JSON.stringify(opts));
+  } catch {
+    /* geen opslag beschikbaar */
   }
 }

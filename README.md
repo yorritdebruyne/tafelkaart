@@ -1,4 +1,4 @@
-# Tafelkaart (M3 – Slim)
+# Tafelkaart (M4 – Fysiek)
 
 Statische web-app die een D&D-kaart tekent uit JSON van de DM. Spelers slepen hun token,
 de app telt de afstand en kopieert de posities terug voor de chat. Tijdens het spel stuurt de DM
@@ -121,6 +121,21 @@ Klik in de app op **Laden → Testkaart (stal)** en controleer:
       Huis 2 (rode rand) is op slot. *Kopieer posities* eindigt op `(deur huis1 open)`;
       na *Nieuwe beurt* valt die melding weg.
 
+**M4 (nieuw): afdrukken**
+
+- [ ] Laad de stal → **Afdrukken**. De dialoog zegt: *2 bladen A4 staand … kaart 25 × 25 cm*.
+- [ ] Kies **A3** → het dorp zegt *4 bladen A3 liggend*; op A4 *8 bladen*.
+- [ ] **Afdrukken** → in het printvenster: schaal **100 %** / *Ware grootte* (niet "Aanpassen aan pagina").
+      Kies eventueel eerst *Opslaan als PDF* om te kijken zonder papier te verspillen.
+- [ ] **Testprint nameten**: één vakje = **25 mm** (± 1 mm), 4 vakjes = 10 cm. Meet horizontaal én verticaal.
+- [ ] Elk blad heeft letters boven, cijfers links, snijtekens op de hoeken en onderaan
+      `Stal · blad 1/2 · rij 1, kolom 1 · A1–E10`. Rechtsonder toont een mini-plattegrond welk blad waar ligt.
+- [ ] Knip langs de snijtekens en leg de bladen aan elkaar: de gridlijnen lopen door.
+- [ ] Standaard: geen tokens, geen donker/licht, de zadelkamer is blanco (wit met grid).
+- [ ] Vinkje **Verborgen kamers op aparte bladen** → een extra blad met alleen H6–J8, om later op de
+      blanco vakjes te leggen. Vinkje **Tokens** en **Inktspaarmodus** doen wat ze zeggen.
+- [ ] Gewoon **Ctrl+P** (zonder de knop) drukt ook de bladen af, met de laatst gekozen instellingen.
+
 Iets mis? Noteer wat je deed, wat je verwachtte en wat er gebeurde (screenshot helpt) en geef het aan Claude.
 
 ---
@@ -146,8 +161,12 @@ src/
     floor/       vloer-afbeeldingen (<id>.svg of .png)
     props/       prop-afbeeldingen (<id>.svg of .png)
     prive/       tegels die niet op GitHub mogen (staat in .gitignore)
+  print/         afdrukken (F16)
+    layout.ts    rekenwerk: hoeveel vakjes per blad, welk stuk op welk blad (25 mm per vakje)
+    sheets.ts    de bladen bouwen: kaart één keer tekenen, per blad een venster, snijtekens, voettekst
+    options.ts   de instellingen (papier, richting, vinkjes)
   ui/
-    app.ts       knoppen, laden, status, zoom, thema
+    app.ts       knoppen, laden, status, zoom, thema, printdialoog
     drag.ts      slepen met muis en touch (pointer events)
     clipboard.ts kopiëren, ook op http via de telefoon
     hash.ts      kaart via #map=... of #b64=...
@@ -219,6 +238,17 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
   open wagen, op 2×3 een handkar. Na het mergen: `npm run fa-index`.
 - In een kast of huifkar kruipen (`ENTER_PROPS`): kost 1 extra, het token wordt half doorzichtig en
   *Kopieer posities* zegt bv. `Amara: B1 (in de kast)`.
+
+## 5b-quater. Wat M4 doet (tot nu toe)
+
+- **F16 printmodus**: knop *Afdrukken*. Elk vakje is 25 mm; A4 = 7 × 11 vakjes per blad, A3 = 11 × 15
+  (liggend omgekeerd). *Richting automatisch* kiest de richting met de minste bladen. Kolommen en rijen
+  worden eerlijk verdeeld (10 kolommen = 5 + 5), zodat je geen smalle reepjes hoeft te plakken.
+- Hoe: de kaart wordt één keer extra getekend (zonder licht, sleepwegen en badges) en elk blad toont er
+  met `<use>` een stuk van, via een `viewBox`. Het blad zelf is een SVG in millimeter (`viewBox="0 0 210 297"`),
+  dus 1 eenheid = 1 mm. `@page { size: …mm; margin: 0 }` zegt de browser hoe groot het papier is.
+- Verborgen kamers: blanco op de kaart, of (vinkje) op een apart blad zonder tokens.
+- **F17 tv-modus**: nog niet, eerst samen bespreken.
 
 ## 5c. Forgotten Adventures (eenmalig instellen)
 

@@ -237,7 +237,7 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
 - **F18** onbekende tegel → grijs vakje met de naam.
 - Fouten per veld; de rest van de kaart wordt toch getekend. Onbekende velden worden genegeerd.
 
-## 5b. Wat M2 tot nu toe doet
+## 5b. Wat M2 doet
 
 - **Deuren zelf openen:** tik op een gewone deur of poort om ze te openen of te sluiten (niet op slot).
   *Kopieer posities* meldt het aan de DM tot de volgende *Nieuwe beurt*.
@@ -282,7 +282,7 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
 - In een kast of huifkar kruipen (`ENTER_PROPS`): kost 1 extra, het token wordt half doorzichtig en
   *Kopieer posities* zegt bv. `Amara: B1 (in de kast)`.
 
-## 5b-quater. Wat M4 doet (tot nu toe)
+## 5b-quater. Wat M4 doet
 
 - **F16 printmodus**: knop *Afdrukken*. Elk vakje is 25 mm; A4 = 7 × 11 vakjes per blad, A3 = 11 × 15
   (liggend omgekeerd). *Richting automatisch* kiest de richting met de minste bladen. Kolommen en rijen
@@ -304,6 +304,10 @@ en `dist/` (wordt gemaakt door `build`). Beide staan in `.gitignore`.
     dezelfde functies (`applySyncOp` in `src/ui/sync.ts`), zodat twee spelers tegelijk kunnen slepen.
     Alleen een nieuwe kaart en *Ongedaan* sturen de hele toestand. Tijdens het slepen gaan er ook
     `drag`-berichten mee: de anderen zien het token live bewegen.
+  - **Licht en sfeer** zijn gedeeld (bericht `look`; het luik onthoudt de laatste keuze, ook na een nieuwe kaart).
+    Thema en zoom blijven per toestel.
+  - Telefoon: met **−** zoom je uit tot de hele kaart past; **▴** naast de kaartnaam klapt de knoppenbalk in
+    (alleen − en + blijven staan).
   - Let op: *Ongedaan* zet de kaart terug naar vóór jouw laatste stap, ook als een ander intussen iets
     deed. Iedereen in je wifi (of tailnet) kan meedoen: alleen thuis gebruiken.
 

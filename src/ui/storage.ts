@@ -20,6 +20,7 @@ export const SAVE_FORMAT = 3;
 export const STATE_KEY = 'tafelkaart.v1.state';
 const THEME_KEY = 'tafelkaart.v1.theme';
 const PRINT_KEY = 'tafelkaart.v1.print';
+const BAR_KEY = 'tafelkaart.v1.bar';
 
 export interface Saved {
   /** De JSON-tekst waarmee de kaart geladen werd (om te herkennen of de hash dezelfde kaart is). */
@@ -152,6 +153,23 @@ export function loadPrint(): PrintOptions {
 export function savePrint(opts: PrintOptions): void {
   try {
     localStorage.setItem(PRINT_KEY, JSON.stringify(opts));
+  } catch {
+    /* geen opslag beschikbaar */
+  }
+}
+
+/** Knoppenbalk ingeklapt? */
+export function loadBarFolded(): boolean {
+  try {
+    return localStorage.getItem(BAR_KEY) === 'folded';
+  } catch {
+    return false;
+  }
+}
+
+export function saveBarFolded(folded: boolean): void {
+  try {
+    localStorage.setItem(BAR_KEY, folded ? 'folded' : 'open');
   } catch {
     /* geen opslag beschikbaar */
   }

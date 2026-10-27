@@ -68,7 +68,8 @@ Er opent een paneel met de scripts; dubbelklik op het script dat je wil.
 3. **Telefoons** (zelfde wifi): open het `Network:`-adres. Bovenaan staat dan `tafel: 3`
    (2 telefoons + tv). Wie het eerst een kaart heeft of laadt, bepaalt de kaart voor iedereen.
 4. Slepen, deuren, patches, *Nieuwe beurt* en *Ongedaan* verschijnen meteen op alle toestellen.
-   Licht, sfeer, thema en zoom blijven per toestel.
+   **Licht** en **sfeer** gelden voor de hele tafel: kies ze op je telefoon en de tv volgt.
+   Thema en zoom blijven per toestel.
 
 Op de tv (`?tv`): **F** = volledig scherm, **L** = kaart laden, **Ctrl+Z** = ongedaan. Slepen met de muis kan ook.
 In het weekend via Tailscale: zelfde stappen, met het Tailscale-adres van de pc (of de Pi, met `tafel:server`).
@@ -149,6 +150,15 @@ Klik in de app op **Laden → Testkaart (stal)** en controleer:
 - [ ] Herlaad de tv (F5): de kaart en posities staan er meteen weer.
 - [ ] Zet de wifi van een telefoon even uit en weer aan: `tafel: weg…`, daarna weer gelijk.
 - [ ] Op de tv: F = volledig scherm, de kaart schaalt mee.
+
+**Na de M4-test**
+
+- [ ] Testkaart met een kast (`cupboard`): je ziet een echte kast (2 vakjes breed), geen deurtje of staafje.
+      Na het pullen eerst `npm run fa-index`.
+- [ ] Telefoon, dorp: blijf op **−** drukken tot de hele kaart in de breedte past.
+- [ ] Telefoon liggend: tik op **▴** naast de kaartnaam → alleen de titel en de zoomknoppen blijven over. **▾** brengt
+      de knoppen terug. De keuze blijft bewaard.
+- [ ] Tafel: zet op je telefoon **Licht** of **Sfeer** om → de tv en de andere telefoon volgen.
 
 **M4 (nieuw): afdrukken**
 

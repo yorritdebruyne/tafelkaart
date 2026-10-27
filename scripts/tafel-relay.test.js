@@ -76,6 +76,16 @@ describe('doorgeefluik (scripts/tafel-relay.js)', () => {
     c.close();
   });
 
+  it('onthoudt licht en sfeer ("look"), ook na een nieuwe kaart', async () => {
+    const base = await start();
+    await post(base, 'toestel-a', { kind: 'look', light: 'aan', sfeer: 'verlaten' });
+    await post(base, 'toestel-a', { kind: 'state', source: '{}', state: { x: 2 } });
+    const c = listen(base, 'toestel-c');
+    await until(() => c.got.some((m) => m.kind === 'init'));
+    expect(c.got.find((m) => m.kind === 'init').look).toMatchObject({ light: 'aan', sfeer: 'verlaten' });
+    c.close();
+  });
+
   it('weigert rommel', async () => {
     const base = await start();
     expect((await post(base, 'toestel-a', 'geen object')).status).toBe(400);

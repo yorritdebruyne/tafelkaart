@@ -24,7 +24,7 @@ import { applySyncOp, TableSync, type SyncMessage } from './sync';
 import { attachDrag } from './drag';
 import { readMapFromHash } from './hash';
 import {
-  STATE_KEY, loadLight, loadPrint, loadSfeer, loadState, loadTheme, savePrint, saveLight, saveSfeer, saveState,
+  STATE_KEY, loadBarFolded, loadLight, saveBarFolded, loadPrint, loadSfeer, loadState, loadTheme, savePrint, saveLight, saveSfeer, saveState,
   saveTheme, type Theme,
 } from './storage';
 
@@ -73,7 +73,7 @@ export class App {
   private readonly tv = new URLSearchParams(location.search).has('tv');
   /** Tafel (F17): andere telefoons en de tv, via het doorgeefluik op de server. */
   private readonly sync = new TableSync({
-    onInit: (snap, ops) => this.syncInit(snap, ops),
+    onInit: (snap, ops, look) => this.syncInit(snap, ops, look),
     onMessage: (msg) => this.syncReceive(msg),
     onClients: (n) => this.syncClients(n),
   });
@@ -297,13 +297,22 @@ export class App {
       this.showToast('Nieuwe beurt: tellers op 0.');
     });
     $('btn-undo').addEventListener('click', () => this.undo());
+    // Knoppenbalk in- en uitklappen (handig op een liggende telefoon). Onthouden per toestel.
+    const bar = $<HTMLButtonElement>('btn-bar');
+    const setBar = (folded: boolean) => {
+      document.body.classList.toggle('bar-folded', folded);
+      bar.textContent = folded ? '▾' : '▴';
+      bar.setAttribute('aria-expanded', String(!folded));
+      bar.title = folded ? 'Knoppen tonen' : 'Knoppen verbergen (meer plaats voor de kaart)';
+      saveBarFolded(folded);
+    };
+    setBar(loadBarFolded());
+    bar.addEventListener('click', () => setBar(!document.body.classList.contains('bar-folded')));
     this.bindPrint();
     $('btn-light').addEventListener('click', () => {
       const order: LightMode[] = ['auto', 'aan', 'uit'];
       const next = order[(order.indexOf(getLightMode()) + 1) % order.length];
-      this.applyLight(next);
-      saveLight(next);
-      if (this.state) renderMap(this.view, this.state, this.selectedId);
+      this.setLight(next, true);
     });
     $('btn-zoom-in').addEventListener('click', () => this.zoom(1.25));
     $('btn-zoom-out').addEventListener('click', () => this.zoom(1 / 1.25));
@@ -398,7 +407,14 @@ export class App {
   // ------------------------------------------------------------ tafel: andere toestellen (F17)
 
   /** (Opnieuw) verbonden met de tafel. */
-  private syncInit(snap: { source: string; state: MapState } | null, ops: SyncMessage[]): void {
+  private syncInit(
+    snap: { source: string; state: MapState } | null,
+    ops: SyncMessage[],
+    look: { light?: LightMode; sfeer?: string } | null,
+  ): void {
+    // Licht en sfeer van de tafel overnemen; heeft de tafel er nog geen, dan brengt een telefoon de zijne mee.
+    if (look) this.applyLook(look);
+    else if (!this.tv) this.shareLook();
     if (snap) {
       // De tafel heeft al een kaart: die nemen we over, met alle stappen erna.
       const state = ops.reduce(applySyncOp, snap.state);
@@ -417,6 +433,10 @@ export class App {
   }
 
   private syncReceive(msg: SyncMessage): void {
+    if (msg.kind === 'look') {
+      this.applyLook(msg);
+      return;
+    }
     if (msg.kind === 'state') {
       const fresh = msg.source !== this.source;
       if (fresh) {
@@ -567,8 +587,23 @@ export class App {
   }
 
   private zoom(factor: number): void {
-    this.cellPx = Math.round(Math.max(MIN_CELL_PX, Math.min(MAX_CELL_PX, this.cellPx * factor)));
+    // Uitzoomen gaat tot de hele kaart op het scherm past (op een telefoon is dat soms kleiner dan MIN_CELL_PX).
+    const min = Math.max(4, Math.min(MIN_CELL_PX, this.wholeMapPx()));
+    this.cellPx = Math.round(Math.max(min, Math.min(MAX_CELL_PX, this.cellPx * factor)));
     this.applyZoom();
+  }
+
+  /** Hoe groot een vakje mag zijn zodat de hele kaart in het kaartvenster past. */
+  private wholeMapPx(): number {
+    if (!this.state) return MIN_CELL_PX;
+    const { cols, rows } = this.state.map;
+    const margin = GUTTER / S + 0.2;
+    // Niet de hoogte van het kaartvenster zelf (die krimpt mee met de kaart), maar de plaats
+    // op het scherm onder de knoppenbalk.
+    const w = this.scroller.clientWidth - 4;
+    const top = Math.max(0, this.scroller.getBoundingClientRect().top);
+    const h = Math.max(120, window.innerHeight - Math.min(top, window.innerHeight * 0.5) - 8);
+    return Math.floor(Math.min(w / (cols + margin), h / (rows + margin)));
   }
 
   private applyZoom(): void {
@@ -589,12 +624,39 @@ export class App {
     btn.textContent = `Sfeer: ${getSfeer()}`;
     btn.addEventListener('click', () => {
       const next = names[(names.indexOf(getSfeer()) + 1) % names.length];
-      setSfeer(next);
-      saveSfeer(next);
-      clearTerrainCache(); // props kunnen een andere grootte hebben
-      btn.textContent = `Sfeer: ${next}`;
-      if (this.state) renderMap(this.view, this.state, this.selectedId);
+      this.setSfeerName(next, true);
     });
+  }
+
+  /** Licht wisselen. `share` = ook naar de andere toestellen aan tafel sturen. */
+  private setLight(m: LightMode, share: boolean): void {
+    if (m === getLightMode()) return;
+    this.applyLight(m);
+    saveLight(m);
+    if (this.state) renderMap(this.view, this.state, this.selectedId);
+    if (share) this.shareLook();
+  }
+
+  /** Sfeer wisselen (alleen als er FA-tegels zijn). */
+  private setSfeerName(name: string, share: boolean): void {
+    const names = sfeerNames();
+    if (!names.includes(name) || name === getSfeer()) return;
+    setSfeer(name);
+    saveSfeer(name);
+    clearTerrainCache(); // props kunnen een andere grootte hebben
+    $('btn-sfeer').textContent = `Sfeer: ${name}`;
+    if (this.state) renderMap(this.view, this.state, this.selectedId);
+    if (share) this.shareLook();
+  }
+
+  /** Licht en sfeer gelden voor de hele tafel (zodat je ze vanaf je telefoon voor de tv kiest). */
+  private shareLook(): void {
+    this.sync.send({ kind: 'look', light: getLightMode(), sfeer: sfeerNames().length ? getSfeer() : undefined });
+  }
+
+  private applyLook(look: { light?: LightMode; sfeer?: string }): void {
+    if (look.light && ['auto', 'aan', 'uit'].includes(look.light)) this.setLight(look.light, false);
+    if (look.sfeer) this.setSfeerName(look.sfeer, false);
   }
 
   // ------------------------------------------------------------ undo (F15)

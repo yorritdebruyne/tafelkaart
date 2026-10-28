@@ -443,3 +443,67 @@ body.bar-folded .toolbar > :not(.zoom) { display: none; }
 body.bar-folded .zoom button { min-height: 32px; }
 body.bar-folded .topbar { padding-top: 4px; padding-bottom: 4px; }
 body.bar-folded .map-scroller { max-height: calc(100dvh - 60px); }
+
+/* ------------------------------------------------------------------ tv-paneel links */
+/* Knop linksboven opent een paneel met de knoppenbalk en een vak om kaarten en patches te
+   plakken. Breed scherm: het paneel krijgt een eigen kolom en de kaart schuift op.
+   Smal scherm (bv. de helft van de tv naast de chat): het paneel ligt over de kaart. */
+.tv-panel-btn, .tv-panel { display: none; }
+body.tv .tv-panel-btn {
+  display: inline-flex;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 15;
+  width: 44px;
+  padding: 0;
+  font-size: 20px;
+  background: rgba(30, 28, 26, 0.85);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+body.tv.tv-panel-open .tv-panel-btn { display: none; }
+body.tv .tv-panel:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1;
+  grid-row: 1;
+  height: 100dvh;
+  overflow: auto;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  z-index: 12;
+}
+body.tv.tv-panel-open { grid-template-columns: minmax(260px, 22vw) 1fr minmax(200px, 19vw); }
+body.tv.tv-panel-open .map-scroller { grid-column: 2; }
+body.tv.tv-panel-open .status { grid-column: 3; }
+body.tv .tv-panel .topbar { display: flex; position: static; border-bottom: 1px solid var(--border); }
+body.tv .tv-panel .bar-toggle { display: none; }
+body.tv .tv-panel #messages { display: block; margin: 8px 0 0; font-size: 13px; }
+body.tv .tv-panel #messages[hidden] { display: none; }
+.tv-panel-body { padding: 10px 12px 16px; }
+.tv-load { display: grid; gap: 8px; }
+.tv-load-head { display: flex; justify-content: space-between; align-items: center; }
+.tv-load textarea {
+  width: 100%;
+  font: 12px/1.35 ui-monospace, Consolas, monospace;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  resize: vertical;
+}
+.tv-load .dialog-errors { margin: 0; padding-left: 18px; font-size: 13px; }
+@media (max-aspect-ratio: 1/1) {
+  body.tv.tv-panel-open { grid-template-columns: 1fr; }
+  body.tv.tv-panel-open .map-scroller, body.tv.tv-panel-open .status { grid-column: 1; }
+  body.tv .tv-panel:not([hidden]) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(340px, 85vw);
+    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.4);
+  }
+}

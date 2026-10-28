@@ -24,7 +24,7 @@ import { applySyncOp, TableSync, type SyncMessage } from './sync';
 import { attachDrag } from './drag';
 import { readMapFromHash } from './hash';
 import {
-  STATE_KEY, loadBarFolded, loadLight, saveBarFolded, loadPrint, loadSfeer, loadState, loadTheme, savePrint, saveLight, saveSfeer, saveState,
+  STATE_KEY, loadBarFolded, loadTvPanel, saveTvPanel, loadLight, saveBarFolded, loadPrint, loadSfeer, loadState, loadTheme, savePrint, saveLight, saveSfeer, saveState,
   saveTheme, type Theme,
 } from './storage';
 
@@ -66,6 +66,8 @@ export class App {
   private readonly dialog = $<HTMLDialogElement>('load-dialog');
   private readonly input = $<HTMLTextAreaElement>('map-input');
   private readonly dialogErrors = $<HTMLElement>('dialog-errors');
+  private readonly tvErrors = $<HTMLElement>('tv-errors');
+  private readonly tvInput = $<HTMLTextAreaElement>('tv-input');
   private readonly toast = $<HTMLElement>('toast');
   private readonly printDialog = $<HTMLDialogElement>('print-dialog');
   private readonly printRoot = $<HTMLElement>('print-root');
@@ -142,6 +144,26 @@ export class App {
     });
     window.addEventListener('afterprint', () => this.printRoot.replaceChildren());
 
+    // Ctrl+V ergens op de pagina (niet in een tekstvak): de kaart of patch meteen laden.
+    // Zo kopieer je de JSON uit de chat met de DM en plak je ze rechtstreeks op de kaart.
+    window.addEventListener('paste', (e) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT')) return;
+      if (this.dialog.open || this.printDialog.open) return;
+      const text = e.clipboardData?.getData('text') ?? '';
+      if (!text.includes('{')) return;
+      e.preventDefault();
+      if (this.loadText(text)) this.showToast('Geplakt en geladen.');
+      else {
+        this.showToast('Plakken lukte niet: zie de foutmelding.', 4000);
+        if (this.tv) this.setTvPanel(true);
+        else {
+          this.input.value = text;
+          this.openDialog();
+        }
+      }
+    });
+
     window.addEventListener('hashchange', () => this.loadFromHash());
     window.addEventListener('resize', () => (this.tv ? this.fitZoom() : this.applyZoom()));
 
@@ -189,10 +211,10 @@ export class App {
     const res = parseMapText(text);
     this.showMessages(res, 'Kaart');
     if (!res.map) {
-      this.dialogErrors.replaceChildren(...res.errors.map((e) => line(e, 'error')));
+      this.setErrors(...res.errors.map((e) => line(e, 'error')));
       return false;
     }
-    this.dialogErrors.replaceChildren();
+    this.setErrors();
     // Nieuwe kaart: de undo-stapel hoort bij de oude kaart.
     this.history = [];
     this.updateUndoButton();
@@ -216,20 +238,20 @@ export class App {
   /** F9: een patch toepassen op de geladen kaart. */
   private loadPatch(value: unknown): boolean {
     if (!this.state) {
-      this.dialogErrors.replaceChildren(line('Dit is een patch. Laad eerst de kaart, en plak de patch daarna.', 'error'));
+      this.setErrors(line('Dit is een patch. Laad eerst de kaart, en plak de patch daarna.', 'error'));
       return false;
     }
     const res = applyPatch(this.state, value);
     if (res.duplicate) {
-      this.dialogErrors.replaceChildren();
+      this.setErrors();
       this.showToast('Deze patch is al toegepast. Niets veranderd.');
       return true;
     }
     if (!res.applied) {
-      this.dialogErrors.replaceChildren(...res.errors.map((e) => line(e, 'error')));
+      this.setErrors(...res.errors.map((e) => line(e, 'error')));
       return false;
     }
-    this.dialogErrors.replaceChildren();
+    this.setErrors();
     this.remember('patch');
     this.state = res.state;
     this.sync.send({ kind: 'patch', value });
@@ -358,6 +380,12 @@ export class App {
     });
   }
 
+  /** Foutmeldingen bij het laden: in de laaddialoog én in het tv-paneel. */
+  private setErrors(...items: HTMLElement[]): void {
+    this.dialogErrors.replaceChildren(...items);
+    this.tvErrors.replaceChildren(...items.map((el) => el.cloneNode(true)));
+  }
+
   private openDialog(): void {
     if (!this.dialog.open) this.dialog.showModal();
   }
@@ -400,8 +428,43 @@ export class App {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT') || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === 'f' || e.key === 'F') fullscreen();
-      else if (e.key === 'l' || e.key === 'L') this.openDialog();
+      else if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        this.setTvPanel(true);
+        this.tvInput.focus();
+      }
     });
+
+    // Het paneel links: de knoppenbalk en de meldingen verhuizen erin (hun knoppen werken gewoon verder).
+    const panel = $<HTMLElement>('tv-panel');
+    const body = $<HTMLElement>('tv-panel-body');
+    body.append($('messages'));
+    panel.insertBefore(document.querySelector('.topbar')!, body);
+    $('tv-panel-btn').addEventListener('click', () => this.setTvPanel(!document.body.classList.contains('tv-panel-open')));
+    $('tv-panel-close').addEventListener('click', () => this.setTvPanel(false));
+    $('tv-draw').addEventListener('click', () => {
+      if (this.loadText(this.tvInput.value)) {
+        this.tvInput.value = '';
+        this.showToast('Geladen.');
+      }
+    });
+    // Ctrl+Enter in het tekstvak = Tekenen.
+    this.tvInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        $('tv-draw').click();
+      }
+    });
+    this.setTvPanel(loadTvPanel());
+  }
+
+  /** Tv-paneel open of dicht (onthouden op dit toestel). De kaart past zich aan de nieuwe plaats aan. */
+  private setTvPanel(open: boolean): void {
+    document.body.classList.toggle('tv-panel-open', open);
+    $('tv-panel').hidden = !open;
+    $('tv-panel-btn').setAttribute('aria-expanded', String(open));
+    saveTvPanel(open);
+    requestAnimationFrame(() => this.fitZoom());
   }
 
   // ------------------------------------------------------------ tafel: andere toestellen (F17)

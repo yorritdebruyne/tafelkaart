@@ -71,7 +71,11 @@ Er opent een paneel met de scripts; dubbelklik op het script dat je wil.
    **Licht** en **sfeer** gelden voor de hele tafel: kies ze op je telefoon en de tv volgt.
    Thema en zoom blijven per toestel.
 
-Op de tv (`?tv`): **F** = volledig scherm, **L** = kaart laden, **Ctrl+Z** = ongedaan. Slepen met de muis kan ook.
+Op de tv (`?tv`): **☰** linksboven (of **L**) opent een paneel met alle knoppen en een vak om een kaart of
+patch te plakken (**Tekenen** of `Ctrl+Enter`). Nog sneller: kopieer de JSON uit de chat met de DM, klik op de kaart
+en druk **Ctrl+V** (dat werkt ook buiten de tv-modus). **F** = volledig scherm, **Ctrl+Z** = ongedaan.
+Slepen met de muis kan ook. Op een smal venster (bv. de helft van de tv naast de chat) ligt het paneel over de kaart;
+sluit het met ✕.
 In het weekend via Tailscale: zelfde stappen, met het Tailscale-adres van de pc (of de Pi, met `tafel:server`).
 
 Stoppen: het rode vierkantje in het Run-venster, of `Ctrl+C` in de terminal.

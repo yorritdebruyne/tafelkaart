@@ -21,6 +21,7 @@ export const STATE_KEY = 'tafelkaart.v1.state';
 const THEME_KEY = 'tafelkaart.v1.theme';
 const PRINT_KEY = 'tafelkaart.v1.print';
 const BAR_KEY = 'tafelkaart.v1.bar';
+const TV_PANEL_KEY = 'tafelkaart.v1.tvpanel';
 
 export interface Saved {
   /** De JSON-tekst waarmee de kaart geladen werd (om te herkennen of de hash dezelfde kaart is). */
@@ -170,6 +171,23 @@ export function loadBarFolded(): boolean {
 export function saveBarFolded(folded: boolean): void {
   try {
     localStorage.setItem(BAR_KEY, folded ? 'folded' : 'open');
+  } catch {
+    /* geen opslag beschikbaar */
+  }
+}
+
+/** Tv-paneel links open? Standaard wel (dan zie je meteen waar je een kaart plakt). */
+export function loadTvPanel(): boolean {
+  try {
+    return localStorage.getItem(TV_PANEL_KEY) !== 'closed';
+  } catch {
+    return true;
+  }
+}
+
+export function saveTvPanel(open: boolean): void {
+  try {
+    localStorage.setItem(TV_PANEL_KEY, open ? 'open' : 'closed');
   } catch {
     /* geen opslag beschikbaar */
   }

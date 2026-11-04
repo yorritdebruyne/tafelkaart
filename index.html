@@ -86,6 +86,22 @@
 
     <div id="print-root" aria-hidden="true"></div>
 
+    <!-- Tv-modus (?tv): paneel links met de knoppen en een vak om kaarten en patches te plakken. -->
+    <button id="tv-panel-btn" class="tv-panel-btn" type="button" aria-controls="tv-panel" title="Paneel met knoppen en kaart laden (L)">☰</button>
+    <aside id="tv-panel" class="tv-panel" hidden>
+      <div id="tv-panel-body" class="tv-panel-body">
+        <div class="tv-load">
+          <div class="tv-load-head">
+            <strong>Kaart of patch plakken</strong>
+            <button id="tv-panel-close" type="button" class="small" title="Paneel sluiten">✕</button>
+          </div>
+          <textarea id="tv-input" rows="6" spellcheck="false" placeholder="Plak hier de JSON van de DM. Of klik op de kaart en druk Ctrl+V."></textarea>
+          <button id="tv-draw" type="button" class="primary">Tekenen</button>
+          <ul id="tv-errors" class="dialog-errors"></ul>
+        </div>
+      </div>
+    </aside>
+
     <button id="tv-hint" class="tv-hint" type="button" hidden>Klik voor volledig scherm (of druk F)</button>
 
     <div id="toast" class="toast" hidden></div>
